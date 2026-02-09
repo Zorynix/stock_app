@@ -12,9 +12,15 @@
 
   &__controls {
     display: flex;
-    gap: 4px;
+    align-items: center;
+    justify-content: space-between;
     padding: 10px 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  &__periods {
+    display: flex;
+    gap: 4px;
   }
 
   &__period-btn {
@@ -36,6 +42,43 @@
       background: #26d9a0;
       color: #fff;
       box-shadow: 0 2px 8px rgba(38, 217, 160, 0.3);
+    }
+  }
+
+  &__mode-toggle {
+    display: flex;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    padding: 2px;
+  }
+
+  &__mode-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.3);
+    transition: all 0.15s ease;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:active {
+      transform: scale(0.9);
+    }
+
+    &--active {
+      background: #26d9a0;
+      color: #fff;
+      box-shadow: 0 1px 4px rgba(38, 217, 160, 0.3);
     }
   }
 

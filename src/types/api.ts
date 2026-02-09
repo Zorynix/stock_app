@@ -7,6 +7,7 @@ export interface InstrumentDto {
 }
 
 export interface CandleDto {
+  open: number;
   high: number;
   low: number;
   close: number;

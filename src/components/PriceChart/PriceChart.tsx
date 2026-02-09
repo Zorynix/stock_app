@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { createChart, type IChartApi, ColorType } from 'lightweight-charts';
 import { Loader } from '@gravity-ui/uikit';
+import { ChartLine, ChartColumn } from '@gravity-ui/icons';
 import { useCandles } from '@/hooks/useInstruments';
 import styles from './PriceChart.module.scss';
 
@@ -9,6 +10,7 @@ interface PriceChartProps {
 }
 
 type PeriodKey = '1D' | '1W' | '1M' | '3M' | '1Y';
+type ChartMode = 'candle' | 'line';
 
 const PERIODS: { key: PeriodKey; label: string; days: number }[] = [
   { key: '1D', label: '1Д', days: 1 },
@@ -32,6 +34,7 @@ export function PriceChart({ figi }: PriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const [activePeriod, setActivePeriod] = useState<PeriodKey>('1M');
+  const [chartMode, setChartMode] = useState<ChartMode>('candle');
 
   const { from, to } = useMemo(
     () => getDateRange(PERIODS.find((p) => p.key === activePeriod)!.days),
@@ -70,29 +73,58 @@ export function PriceChart({ figi }: PriceChartProps) {
 
     chartRef.current = chart;
 
-    const areaSeries = chart.addAreaSeries({
-      lineColor: '#26d9a0',
-      topColor: 'rgba(38, 217, 160, 0.28)',
-      bottomColor: 'rgba(38, 217, 160, 0.02)',
-      lineWidth: 2,
-      crosshairMarkerVisible: true,
-      crosshairMarkerRadius: 4,
-      crosshairMarkerBackgroundColor: '#ffffff',
-      priceLineColor: '#26d9a0',
-      priceLineStyle: 2,
-    });
-
-    if (candles && candles.length > 0) {
-      const seriesData = candles.map((candle, index) => {
-        const date = new Date(from);
-        date.setDate(date.getDate() + index);
-        return {
-          time: date.toISOString().split('T')[0],
-          value: candle.close,
-        };
+    if (chartMode === 'candle') {
+      const candlestickSeries = chart.addCandlestickSeries({
+        upColor: '#26d9a0',
+        downColor: '#ff453a',
+        borderUpColor: '#26d9a0',
+        borderDownColor: '#ff453a',
+        wickUpColor: '#26d9a0',
+        wickDownColor: '#ff453a',
+        priceLineColor: '#26d9a0',
+        priceLineStyle: 2,
       });
-      areaSeries.setData(seriesData);
-      chart.timeScale().fitContent();
+
+      if (candles && candles.length > 0) {
+        const seriesData = candles.map((candle, index) => {
+          const date = new Date(from);
+          date.setDate(date.getDate() + index);
+          return {
+            time: date.toISOString().split('T')[0],
+            open: candle.open,
+            high: candle.high,
+            low: candle.low,
+            close: candle.close,
+          };
+        });
+        candlestickSeries.setData(seriesData);
+        chart.timeScale().fitContent();
+      }
+    } else {
+      const areaSeries = chart.addAreaSeries({
+        lineColor: '#26d9a0',
+        topColor: 'rgba(38, 217, 160, 0.28)',
+        bottomColor: 'rgba(38, 217, 160, 0.02)',
+        lineWidth: 2,
+        crosshairMarkerVisible: true,
+        crosshairMarkerRadius: 4,
+        crosshairMarkerBackgroundColor: '#26d9a0',
+        priceLineColor: '#26d9a0',
+        priceLineStyle: 2,
+      });
+
+      if (candles && candles.length > 0) {
+        const seriesData = candles.map((candle, index) => {
+          const date = new Date(from);
+          date.setDate(date.getDate() + index);
+          return {
+            time: date.toISOString().split('T')[0],
+            value: candle.close,
+          };
+        });
+        areaSeries.setData(seriesData);
+        chart.timeScale().fitContent();
+      }
     }
 
     const handleResize = () => {
@@ -107,21 +139,41 @@ export function PriceChart({ figi }: PriceChartProps) {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [candles, from, activePeriod]);
+  }, [candles, from, activePeriod, chartMode]);
 
   return (
     <div className={styles['price-chart']}>
       <div className={styles['price-chart__controls']}>
-        {PERIODS.map(({ key, label }) => (
+        <div className={styles['price-chart__periods']}>
+          {PERIODS.map(({ key, label }) => (
+            <button
+              key={key}
+              className={`${styles['price-chart__period-btn']} ${activePeriod === key ? styles['price-chart__period-btn--active'] : ''}`}
+              onClick={() => setActivePeriod(key)}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className={styles['price-chart__mode-toggle']}>
           <button
-            key={key}
-            className={`${styles['price-chart__period-btn']} ${activePeriod === key ? styles['price-chart__period-btn--active'] : ''}`}
-            onClick={() => setActivePeriod(key)}
+            className={`${styles['price-chart__mode-btn']} ${chartMode === 'line' ? styles['price-chart__mode-btn--active'] : ''}`}
+            onClick={() => setChartMode('line')}
             type="button"
+            title="Линейный"
           >
-            {label}
+            <ChartLine />
           </button>
-        ))}
+          <button
+            className={`${styles['price-chart__mode-btn']} ${chartMode === 'candle' ? styles['price-chart__mode-btn--active'] : ''}`}
+            onClick={() => setChartMode('candle')}
+            type="button"
+            title="Свечи"
+          >
+            <ChartColumn />
+          </button>
+        </div>
       </div>
       {isLoading ? (
         <div className={styles['price-chart__loading']}>
