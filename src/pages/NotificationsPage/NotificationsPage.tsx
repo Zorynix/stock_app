@@ -1,25 +1,49 @@
-import {
-  SquareArticle,
-  Calendar,
-  ChartColumn,
-  Bell,
-  Globe,
-} from '@gravity-ui/icons';
-import { StubPage } from '@/pages/StubPage/StubPage';
+import { Loader } from '@gravity-ui/uikit';
+import { Bell } from '@gravity-ui/icons';
+import { useTelegram } from '@/providers/TelegramProvider';
+import { useNotifications } from '@/hooks/useNotifications';
+import { PageHeader } from '@/components/PageHeader/PageHeader';
+import { NotificationCard } from '@/components/NotificationCard/NotificationCard';
+import { EmptyState } from '@/components/EmptyState/EmptyState';
+import styles from './NotificationsPage.module.scss';
 
 export function NotificationsPage() {
+  const { user } = useTelegram();
+  const userId = user?.id ?? null;
+  const { data: notifications, isLoading } = useNotifications(userId);
+
   return (
-    <StubPage
-      title="Новости и события"
-      description="Сервис новостей находится в разработке. Скоро вы сможете следить за событиями, влияющими на ваши инвестиции."
-      icon={<SquareArticle />}
-      iconBg="linear-gradient(135deg, #ff9500, #e68600)"
-      features={[
-        { icon: <Globe />, text: 'Лента новостей по вашим инструментам' },
-        { icon: <Calendar />, text: 'Календарь отчётностей и дивидендов' },
-        { icon: <ChartColumn />, text: 'Влияние новостей на цены' },
-        { icon: <Bell />, text: 'Push-уведомления о важных событиях' },
-      ]}
-    />
+    <div className={styles['notifications-page']}>
+      <PageHeader
+        title="Уведомления"
+        subtitle="История ценовых алертов"
+      />
+
+      <div className={styles['notifications-page__info']}>
+        Алерты автоматически отправляются в Telegram, когда цена акции выходит за установленные границы.
+      </div>
+
+      {isLoading ? (
+        <div className={styles['notifications-page__loading']}>
+          <Loader size="l" />
+        </div>
+      ) : notifications && notifications.length > 0 ? (
+        <div className={styles['notifications-page__list']}>
+          {notifications.map((notification, i) => (
+            <NotificationCard
+              key={notification.id}
+              notification={notification}
+              delay={i * 40}
+            />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon={<Bell />}
+          title="Нет уведомлений"
+          description="Когда сработают ваши ценовые алерты, уведомления появятся здесь"
+        />
+      )}
+    </div>
   );
 }

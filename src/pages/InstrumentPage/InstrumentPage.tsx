@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@gravity-ui/uikit';
-import { ArrowLeft, Bell, Plus } from '@gravity-ui/icons';
+import { ArrowLeft, Bell, Plus, FileArrowDown } from '@gravity-ui/icons';
 import { useTelegram } from '@/providers/TelegramProvider';
 import { useTrackedInstruments, useCreateTracked, useDeleteTracked } from '@/hooks/useTracked';
 import { PriceChart } from '@/components/PriceChart/PriceChart';
 import { AlertDialog } from '@/components/AlertDialog/AlertDialog';
+import { ReportDialog } from '@/components/ReportDialog/ReportDialog';
 import { TrackedCard } from '@/components/TrackedCard/TrackedCard';
+import { reportsApi } from '@/api/reports';
 import { formatPrice } from '@/utils/format';
-import type { InstrumentDto, TrackedInstrumentResponse } from '@/types/api';
+import type { InstrumentDto, TrackedInstrumentResponse, ReportPeriod } from '@/types/api';
 import styles from './InstrumentPage.module.scss';
 
 export function InstrumentPage() {
@@ -28,6 +30,8 @@ export function InstrumentPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editData, setEditData] = useState<TrackedInstrumentResponse | null>(null);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
 
   const handleCreateAlert = (buyPrice: number, sellPrice: number) => {
     if (!figi || !userId || !chatId || !instrument) {
@@ -65,6 +69,28 @@ export function InstrumentPage() {
   const handleEdit = (tracked: TrackedInstrumentResponse) => {
     setEditData(tracked);
     setDialogOpen(true);
+  };
+
+  const handleDownloadReport = async (period: ReportPeriod) => {
+    if (!figi || !instrument) return;
+    setReportLoading(true);
+    try {
+      const blob = await reportsApi.downloadStockReport(figi, instrument.name, period);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `report_${figi}_${period}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      hapticFeedback('notification');
+      setReportDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to download report:', error);
+    } finally {
+      setReportLoading(false);
+    }
   };
 
   return (
@@ -110,6 +136,20 @@ export function InstrumentPage() {
           </Button.Icon>
           Создать алерт
         </Button>
+        <Button
+          view="outlined"
+          size="xl"
+          width="max"
+          onClick={() => {
+            setReportDialogOpen(true);
+            hapticFeedback('impact');
+          }}
+        >
+          <Button.Icon>
+            <FileArrowDown />
+          </Button.Icon>
+          Экспорт PDF
+        </Button>
       </div>
 
       {instrumentTracked.length > 0 && (
@@ -144,6 +184,14 @@ export function InstrumentPage() {
         currentPrice={instrument?.price}
         editData={editData}
         isLoading={createMutation.isPending}
+      />
+
+      <ReportDialog
+        open={reportDialogOpen}
+        onClose={() => setReportDialogOpen(false)}
+        onDownload={handleDownloadReport}
+        instrumentName={instrument?.name ?? ''}
+        isLoading={reportLoading}
       />
     </div>
   );

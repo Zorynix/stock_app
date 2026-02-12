@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button, Loader } from '@gravity-ui/uikit';
 import {
-  Magnifier,
   BellDot,
   ChartLine,
   Briefcase,
@@ -51,8 +50,6 @@ export function DashboardPage() {
             icon={<Briefcase />}
             iconBg="linear-gradient(135deg, #34c759, #28a745)"
             onClick={() => navigate('/portfolio')}
-            badge="Скоро"
-            disabled
             delay={100}
           />
           <ServiceCard
@@ -66,13 +63,11 @@ export function DashboardPage() {
             delay={150}
           />
           <ServiceCard
-            name="Новости"
-            description="Лента новостей, события и отчётности компаний"
+            name="Уведомления"
+            description="История алертов и Telegram-уведомления"
             icon={<SquareArticle />}
             iconBg="linear-gradient(135deg, #ff9500, #e68600)"
             onClick={() => navigate('/notifications')}
-            badge="Скоро"
-            disabled
             delay={200}
           />
         </div>

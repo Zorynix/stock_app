@@ -1,7 +1,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Magnifier,
-  ChartAreaStacked,
+  Bell,
   BellDot,
   CircleDashed,
   House,
@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { path: '/search', label: 'Поиск', icon: Magnifier },
   { path: '/tracked', label: 'Алерты', icon: BellDot },
   { path: '/portfolio', label: 'Портфель', icon: CircleDashed },
-  { path: '/analytics', label: 'Аналитика', icon: ChartAreaStacked },
+  { path: '/notifications', label: 'Уведомления', icon: Bell },
 ] as const;
 
 export function Layout() {

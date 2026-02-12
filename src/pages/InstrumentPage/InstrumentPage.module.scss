@@ -64,6 +64,7 @@
 
   &__actions {
     display: flex;
+    flex-direction: column;
     gap: 10px;
     margin-bottom: 24px;
     animation: fadeIn 0.3s ease forwards;
