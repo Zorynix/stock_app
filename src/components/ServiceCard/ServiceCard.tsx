@@ -1,7 +1,7 @@
-import { Label } from '@gravity-ui/uikit';
-import { ChevronRight } from '@gravity-ui/icons';
+import { ChevronRight } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
-import styles from './ServiceCard.module.scss';
 
 interface ServiceCardProps {
   name: string;
@@ -22,35 +22,30 @@ export function ServiceCard({
   onClick,
   disabled = false,
   badge,
-  delay = 0,
 }: ServiceCardProps) {
   return (
     <div
-      className={`${styles['service-card']} ${disabled ? styles['service-card--disabled'] : ''}`}
+      className={cn(
+        'flex items-center gap-3 p-4 bg-card border border-card-border rounded-2xl transition-colors',
+        !disabled && 'cursor-pointer hover:bg-secondary active:scale-[0.98]',
+        disabled && 'opacity-60 cursor-not-allowed',
+      )}
       onClick={disabled ? undefined : onClick}
       role="button"
       tabIndex={disabled ? -1 : 0}
-      style={{ '--delay': `${delay}ms` } as React.CSSProperties}
     >
-      <div className={styles['service-card__icon']} style={{ background: iconBg }}>
+      <div
+        className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0"
+        style={{ background: iconBg }}
+      >
         {icon}
       </div>
-      <div className={styles['service-card__body']}>
-        <div className={styles['service-card__name']}>{name}</div>
-        <div className={styles['service-card__description']}>{description}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-foreground">{name}</div>
+        <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{description}</div>
       </div>
-      {badge && (
-        <div className={styles['service-card__badge']}>
-          <Label theme="info" size="s">
-            {badge}
-          </Label>
-        </div>
-      )}
-      {!disabled && (
-        <div className={styles['service-card__arrow']}>
-          <ChevronRight />
-        </div>
-      )}
+      {badge && <Badge variant="info">{badge}</Badge>}
+      {!disabled && <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
     </div>
   );
 }

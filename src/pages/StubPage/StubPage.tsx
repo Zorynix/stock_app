@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { Button, Label } from '@gravity-ui/uikit';
 import { useNavigate } from 'react-router-dom';
-import styles from './StubPage.module.scss';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface StubPageProps {
   title: string;
@@ -15,34 +15,35 @@ export function StubPage({ title, description, icon, iconBg, features }: StubPag
   const navigate = useNavigate();
 
   return (
-    <div className={styles['stub-page']}>
-      <div className={styles['stub-page__content']}>
-        <div className={styles['stub-page__icon']} style={{ background: iconBg }}>
+    <div className="flex flex-col items-center justify-center min-h-full px-6 py-12">
+      <div className="w-full max-w-sm space-y-6 text-center">
+        <div
+          className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto text-white"
+          style={{ background: iconBg }}
+        >
           {icon}
         </div>
-        <div className={styles['stub-page__title']}>
-          {title}
-          {' '}
-          <Label theme="info" size="s">
-            Скоро
-          </Label>
-        </div>
-        <div className={styles['stub-page__description']}>{description}</div>
 
-        <div className={styles['stub-page__features']}>
+        <div>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <span className="text-xl font-bold text-foreground">{title}</span>
+            <Badge variant="info">Скоро</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+
+        <div className="space-y-2 text-left">
           {features.map((feature, i) => (
-            <div key={i} className={styles['stub-page__feature']}>
-              {feature.icon}
-              <span>{feature.text}</span>
+            <div key={i} className="flex items-center gap-3 p-3 bg-card border border-card-border rounded-xl">
+              <div className="text-muted-foreground shrink-0">{feature.icon}</div>
+              <span className="text-sm text-foreground">{feature.text}</span>
             </div>
           ))}
         </div>
 
-        <div className={styles['stub-page__action']}>
-          <Button view="outlined" size="l" onClick={() => navigate('/')}>
-            Вернуться на главную
-          </Button>
-        </div>
+        <Button variant="outline" size="lg" onClick={() => navigate('/')}>
+          Вернуться на главную
+        </Button>
       </div>
     </div>
   );
