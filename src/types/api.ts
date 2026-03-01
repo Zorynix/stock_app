@@ -20,8 +20,10 @@ export interface TrackedInstrumentRequest {
   instrumentName: string;
   buyPrice: number;
   sellPrice: number;
-  userId: number;
-  chatId: number;
+  /** Опционален при JWT-аутентификации (legacy: Telegram userId) */
+  userId?: number;
+  /** Опционален при JWT-аутентификации (legacy: Telegram chatId) */
+  chatId?: number;
 }
 
 export interface TrackedInstrumentResponse {
@@ -132,4 +134,46 @@ export interface NotificationResponse {
 // ─── Report Types ──────────────────────────────────────────────
 
 export type ReportPeriod = '1m' | '3m' | '6m' | '1y';
+export type ReportFormat = 'pdf' | 'md';
+
+// ─── Add Email DTOs ────────────────────────────────────────
+
+export interface AddEmailResponse {
+  /** "VERIFY" — новый email; "LINK" — email принадлежит существующему web-аккаунту */
+  action: 'VERIFY' | 'LINK';
+  webCount: number;
+  telegramCount: number;
+}
+
+export type ConflictResolution = 'KEEP_WEB' | 'KEEP_TELEGRAM' | 'MERGE';
+
+// ─── Auth DTOs ─────────────────────────────────────────────────
+
+export interface AuthResponse {
+  token: string;
+  userId: string;
+  email: string | null;
+  telegramId: number | null;
+  emailConfirmed: boolean;
+  telegramLinked: boolean;
+  emailNotificationsEnabled: boolean;
+}
+
+export interface AlertStats {
+  total: number;
+  buyAlertTriggered: number;
+  sellAlertTriggered: number;
+  active: number;
+}
+
+export interface ProfileResponse {
+  id: string;
+  email: string | null;
+  telegramId: number | null;
+  emailConfirmed: boolean;
+  telegramLinked: boolean;
+  emailNotificationsEnabled: boolean;
+  createdAt: string;
+  alertStats: AlertStats;
+}
 

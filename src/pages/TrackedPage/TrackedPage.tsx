@@ -17,10 +17,9 @@ import styles from './TrackedPage.module.scss';
 
 export function TrackedPage() {
   const navigate = useNavigate();
-  const { user, chatId, hapticFeedback, showConfirm } = useTelegram();
-  const userId = user?.id ?? null;
+  const { hapticFeedback, showConfirm } = useTelegram();
 
-  const { data: trackedList, isLoading } = useTrackedInstruments(userId);
+  const { data: trackedList, isLoading } = useTrackedInstruments();
   const updateMutation = useUpdateTracked();
   const deleteMutation = useDeleteTracked();
 
@@ -33,7 +32,7 @@ export function TrackedPage() {
   };
 
   const handleUpdateSubmit = (buyPrice: number, sellPrice: number) => {
-    if (!editData || !userId || !chatId) return;
+    if (!editData) return;
 
     updateMutation.mutate(
       {
@@ -43,8 +42,6 @@ export function TrackedPage() {
           instrumentName: editData.instrumentName,
           buyPrice,
           sellPrice,
-          userId,
-          chatId,
         },
       },
       {

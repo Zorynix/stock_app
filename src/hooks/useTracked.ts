@@ -2,11 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { trackedApi } from '@/api/tracked';
 import type { TrackedInstrumentRequest } from '@/types/api';
 
-export function useTrackedInstruments(userId: number | null) {
+export function useTrackedInstruments() {
   return useQuery({
-    queryKey: ['tracked-instruments', userId],
-    queryFn: () => trackedApi.getAll(userId!),
-    enabled: !!userId,
+    queryKey: ['tracked-instruments'],
+    queryFn: () => trackedApi.getAll(),
   });
 }
 

@@ -10,19 +10,18 @@ import { ReportDialog } from '@/components/ReportDialog/ReportDialog';
 import { TrackedCard } from '@/components/TrackedCard/TrackedCard';
 import { reportsApi } from '@/api/reports';
 import { formatPrice } from '@/utils/format';
-import type { InstrumentDto, TrackedInstrumentResponse, ReportPeriod } from '@/types/api';
+import type { InstrumentDto, TrackedInstrumentResponse, ReportPeriod, ReportFormat } from '@/types/api';
 import styles from './InstrumentPage.module.scss';
 
 export function InstrumentPage() {
   const { figi } = useParams<{ figi: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, chatId, hapticFeedback, showConfirm } = useTelegram();
+  const { hapticFeedback, showConfirm } = useTelegram();
 
   const instrument = (location.state as { instrument?: InstrumentDto })?.instrument;
-  const userId = user?.id ?? null;
 
-  const { data: allTracked } = useTrackedInstruments(userId);
+  const { data: allTracked } = useTrackedInstruments();
   const instrumentTracked = allTracked?.filter((t) => t.figi === figi) ?? [];
 
   const createMutation = useCreateTracked();
@@ -34,10 +33,7 @@ export function InstrumentPage() {
   const [reportLoading, setReportLoading] = useState(false);
 
   const handleCreateAlert = (buyPrice: number, sellPrice: number) => {
-    if (!figi || !userId || !chatId || !instrument) {
-      console.warn('Cannot create alert — missing data:', { figi, userId, chatId, instrument });
-      return;
-    }
+    if (!figi || !instrument) return;
 
     createMutation.mutate(
       {
@@ -45,8 +41,6 @@ export function InstrumentPage() {
         instrumentName: instrument.name,
         buyPrice,
         sellPrice,
-        userId,
-        chatId,
       },
       {
         onSuccess: () => {
@@ -71,15 +65,15 @@ export function InstrumentPage() {
     setDialogOpen(true);
   };
 
-  const handleDownloadReport = async (period: ReportPeriod) => {
+  const handleDownloadReport = async (period: ReportPeriod, format: ReportFormat) => {
     if (!figi || !instrument) return;
     setReportLoading(true);
     try {
-      const blob = await reportsApi.downloadStockReport(figi, instrument.name, period);
+      const blob = await reportsApi.downloadStockReport(figi, instrument.name, period, format);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `report_${figi}_${period}.pdf`;
+      a.download = `report_${figi}_${period}.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -148,7 +142,7 @@ export function InstrumentPage() {
           <Button.Icon>
             <FileArrowDown />
           </Button.Icon>
-          Экспорт PDF
+          Экспорт отчёта
         </Button>
       </div>
 

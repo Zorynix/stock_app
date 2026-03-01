@@ -2,10 +2,8 @@ import { apiClient } from './client';
 import type { TrackedInstrumentRequest, TrackedInstrumentResponse } from '@/types/api';
 
 export const trackedApi = {
-  getAll: async (userId: number): Promise<TrackedInstrumentResponse[]> => {
-    const { data } = await apiClient.get<TrackedInstrumentResponse[]>('/tracked-instruments', {
-      params: { userId },
-    });
+  getAll: async (): Promise<TrackedInstrumentResponse[]> => {
+    const { data } = await apiClient.get<TrackedInstrumentResponse[]>('/tracked-instruments');
     return data;
   },
 

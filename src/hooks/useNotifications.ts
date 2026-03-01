@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { notificationsApi } from '@/api/notifications';
 
-export function useNotifications(userId: number | null) {
+export function useNotifications() {
   return useQuery({
-    queryKey: ['notifications', userId],
-    queryFn: () => notificationsApi.getAll(userId!),
-    enabled: !!userId,
+    queryKey: ['notifications'],
+    queryFn: () => notificationsApi.getAll(),
     refetchInterval: 15_000,
   });
 }

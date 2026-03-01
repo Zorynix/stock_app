@@ -3,8 +3,6 @@ import { Button, Loader } from '@gravity-ui/uikit';
 import {
   BellDot,
   ChartLine,
-  Briefcase,
-  Cpu,
   SquareArticle,
   ArrowRight,
 } from '@gravity-ui/icons';
@@ -17,8 +15,7 @@ import styles from './DashboardPage.module.scss';
 export function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useTelegram();
-  const userId = user?.id ?? null;
-  const { data: trackedList, isLoading } = useTrackedInstruments(userId);
+  const { data: trackedList, isLoading } = useTrackedInstruments();
 
   return (
     <div className={styles.dashboard}>
@@ -43,24 +40,6 @@ export function DashboardPage() {
             iconBg="linear-gradient(135deg, #ffbe5c, #e6a030)"
             onClick={() => navigate('/search')}
             delay={50}
-          />
-          <ServiceCard
-            name="Портфель"
-            description="Управление портфелем, учёт позиций и P&L"
-            icon={<Briefcase />}
-            iconBg="linear-gradient(135deg, #34c759, #28a745)"
-            onClick={() => navigate('/portfolio')}
-            delay={100}
-          />
-          <ServiceCard
-            name="Аналитика"
-            description="AI-аналитика, рекомендации и скринеры"
-            icon={<Cpu />}
-            iconBg="linear-gradient(135deg, #af52de, #8b3ec7)"
-            onClick={() => navigate('/analytics')}
-            badge="Скоро"
-            disabled
-            delay={150}
           />
           <ServiceCard
             name="Уведомления"

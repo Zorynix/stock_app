@@ -3,8 +3,8 @@ import {
   Magnifier,
   Bell,
   BellDot,
-  CircleDashed,
   House,
+  Person,
 } from '@gravity-ui/icons';
 import styles from './Layout.module.scss';
 
@@ -12,8 +12,8 @@ const NAV_ITEMS = [
   { path: '/', label: 'Главная', icon: House },
   { path: '/search', label: 'Поиск', icon: Magnifier },
   { path: '/tracked', label: 'Алерты', icon: BellDot },
-  { path: '/portfolio', label: 'Портфель', icon: CircleDashed },
   { path: '/notifications', label: 'Уведомления', icon: Bell },
+  { path: '/profile', label: 'Профиль', icon: Person },
 ] as const;
 
 export function Layout() {

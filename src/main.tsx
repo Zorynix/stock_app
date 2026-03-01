@@ -10,6 +10,7 @@ import './styles/global.scss';
 
 import { App } from './App';
 import { TelegramProvider } from './providers/TelegramProvider';
+import { AuthProvider } from './providers/AuthProvider';
 
 configure({ lang: 'ru' });
 
@@ -28,9 +29,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <TelegramProvider>
-          <ThemeProvider theme="dark">
-            <App />
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider theme="dark">
+              <App />
+            </ThemeProvider>
+          </AuthProvider>
         </TelegramProvider>
       </QueryClientProvider>
     </BrowserRouter>

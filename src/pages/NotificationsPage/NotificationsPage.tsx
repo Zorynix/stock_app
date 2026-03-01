@@ -1,6 +1,5 @@
 import { Loader } from '@gravity-ui/uikit';
 import { Bell } from '@gravity-ui/icons';
-import { useTelegram } from '@/providers/TelegramProvider';
 import { useNotifications } from '@/hooks/useNotifications';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { NotificationCard } from '@/components/NotificationCard/NotificationCard';
@@ -8,9 +7,7 @@ import { EmptyState } from '@/components/EmptyState/EmptyState';
 import styles from './NotificationsPage.module.scss';
 
 export function NotificationsPage() {
-  const { user } = useTelegram();
-  const userId = user?.id ?? null;
-  const { data: notifications, isLoading } = useNotifications(userId);
+  const { data: notifications, isLoading } = useNotifications();
 
   return (
     <div className={styles['notifications-page']}>
