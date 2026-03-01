@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, TextInput, Text } from '@gravity-ui/uikit';
+import { Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/providers/AuthProvider';
-import styles from './ConfirmEmailPage.module.scss';
 
 const RESEND_COOLDOWN = 60;
 
@@ -57,60 +59,55 @@ export function ConfirmEmailPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <Text variant="header-1">Подтвердите email</Text>
-          <Text variant="body-2" color="secondary">
+    <div className="min-h-dvh flex items-center justify-center px-4 py-12 bg-background">
+      <div className="w-full max-w-sm space-y-6">
+        <div className="text-center space-y-2">
+          <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto">
+            <Mail className="w-7 h-7 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Подтвердите email</h1>
+          <p className="text-sm text-muted-foreground">
             Мы отправили 6-значный код на{' '}
-            <Text as="span" variant="body-2" color="primary">
-              {pendingEmail}
-            </Text>
-          </Text>
+            <span className="text-primary font-medium">{pendingEmail}</span>
+          </p>
         </div>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <TextInput
-            label="Код из письма"
-            value={code}
-            onUpdate={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
-            placeholder="000000"
-            size="l"
-            autoComplete="one-time-code"
-            disabled={isLoading}
-          />
+        <div className="bg-card border border-card-border rounded-2xl p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="code">Код из письма</Label>
+              <Input
+                id="code"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                autoComplete="one-time-code"
+                disabled={isLoading}
+              />
+            </div>
 
-          {error && (
-            <Text color="danger" variant="body-2">
-              {error}
-            </Text>
-          )}
+            {error && <p className="text-sm text-negative">{error}</p>}
+            {success && <p className="text-sm text-positive">{success}</p>}
 
-          {success && (
-            <Text color="positive" variant="body-2">
-              {success}
-            </Text>
-          )}
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              loading={isLoading}
+              disabled={code.length !== 6}
+            >
+              Подтвердить
+            </Button>
+          </form>
+        </div>
 
-          <Button
-            type="submit"
-            view="action"
-            size="l"
-            width="max"
-            loading={isLoading}
-            disabled={code.length !== 6}
-          >
-            Подтвердить
-          </Button>
-        </form>
-
-        <div className={styles.footer}>
+        <div className="text-center">
           {cooldown > 0 ? (
-            <Text variant="body-2" color="secondary">
+            <p className="text-sm text-muted-foreground">
               Повторная отправка через {cooldown} сек.
-            </Text>
+            </p>
           ) : (
-            <Button view="flat" size="s" onClick={handleResend}>
+            <Button variant="ghost" size="sm" onClick={handleResend}>
               Отправить код повторно
             </Button>
           )}

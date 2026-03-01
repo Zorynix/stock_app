@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Loader, Select, Label } from '@gravity-ui/uikit';
-import { Briefcase } from '@gravity-ui/icons';
+import { Briefcase } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { PositionCard } from '@/components/PositionCard/PositionCard';
 import { EmptyState } from '@/components/EmptyState/EmptyState';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAccounts, usePortfolio } from '@/hooks/usePortfolio';
-import { formatPrice, formatChange, getPriceChangeClass } from '@/utils/format';
-import styles from './PortfolioPage.module.scss';
+import { formatPrice, formatChange } from '@/utils/format';
+import { cn } from '@/lib/utils';
 
 export function PortfolioPage() {
   const { data: accounts, isLoading: accountsLoading } = useAccounts();
@@ -20,102 +27,107 @@ export function PortfolioPage() {
 
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio(selectedAccount);
 
-  const accountOptions = (accounts ?? []).map((a) => ({
-    value: a.id,
-    content: a.name,
-  }));
-
   const isLoading = accountsLoading || portfolioLoading;
 
+  const Spinner = () => (
+    <div className="flex justify-center py-12">
+      <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      </svg>
+    </div>
+  );
+
   return (
-    <div className={styles['portfolio-page']}>
+    <div className="flex flex-col min-h-full">
       <PageHeader title="Портфель" subtitle="Позиции и доходность" />
 
       {accounts && accounts.length > 1 && (
-        <div className={styles['portfolio-page__account-select']}>
+        <div className="px-4 pb-3">
           <Select
-            value={selectedAccount ? [selectedAccount] : []}
-            onUpdate={(val) => setSelectedAccount(val[0] ?? null)}
-            options={accountOptions}
-            size="l"
-            width="max"
-          />
+            value={selectedAccount ?? undefined}
+            onValueChange={(val) => setSelectedAccount(val)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Выберите счёт" />
+            </SelectTrigger>
+            <SelectContent>
+              {accounts.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
       {isLoading ? (
-        <div className={styles['portfolio-page__loading']}>
-          <Loader size="l" />
-        </div>
+        <Spinner />
       ) : portfolio ? (
-        <>
-          {/* Summary Cards */}
-          <div className={styles['portfolio-page__summary']}>
-            <div className={styles['portfolio-page__stat-card']}>
-              <div className={styles['portfolio-page__stat-label']}>Общая стоимость</div>
-              <div className={styles['portfolio-page__stat-value']}>
+        <div className="px-4 space-y-4 pb-4">
+          {/* Summary */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-card border border-card-border rounded-2xl p-4">
+              <p className="text-xs text-muted-foreground mb-1">Общая стоимость</p>
+              <p className="text-lg font-bold text-foreground">
                 {formatPrice(portfolio.totalPortfolioValue)} ₽
-              </div>
+              </p>
             </div>
-            <div className={styles['portfolio-page__stat-card']}>
-              <div className={styles['portfolio-page__stat-label']}>Доходность</div>
-              <div
-                className={`${styles['portfolio-page__stat-value']} ${
-                  styles[`portfolio-page__stat-value--${getPriceChangeClass(portfolio.expectedYield)}`]
-                }`}
+            <div className="bg-card border border-card-border rounded-2xl p-4">
+              <p className="text-xs text-muted-foreground mb-1">Доходность</p>
+              <p
+                className={cn(
+                  'text-lg font-bold',
+                  portfolio.expectedYield > 0 && 'text-positive',
+                  portfolio.expectedYield < 0 && 'text-negative',
+                  portfolio.expectedYield === 0 && 'text-foreground',
+                )}
               >
                 {formatChange(portfolio.expectedYield)} ₽
-              </div>
+              </p>
             </div>
           </div>
 
           {/* Breakdown */}
-          <div className={styles['portfolio-page__breakdown']}>
+          <div className="flex flex-wrap gap-2">
             {portfolio.totalAmountShares > 0 && (
-              <Label theme="info" size="s">
-                Акции: {formatPrice(portfolio.totalAmountShares)} ₽
-              </Label>
+              <Badge variant="info">Акции: {formatPrice(portfolio.totalAmountShares)} ₽</Badge>
             )}
             {portfolio.totalAmountBonds > 0 && (
-              <Label theme="normal" size="s">
-                Облигации: {formatPrice(portfolio.totalAmountBonds)} ₽
-              </Label>
+              <Badge variant="normal">Облигации: {formatPrice(portfolio.totalAmountBonds)} ₽</Badge>
             )}
             {portfolio.totalAmountEtf > 0 && (
-              <Label theme="utility" size="s">
-                ETF: {formatPrice(portfolio.totalAmountEtf)} ₽
-              </Label>
+              <Badge variant="secondary">ETF: {formatPrice(portfolio.totalAmountEtf)} ₽</Badge>
             )}
             {portfolio.totalAmountCurrencies > 0 && (
-              <Label theme="success" size="s">
-                Валюта: {formatPrice(portfolio.totalAmountCurrencies)} ₽
-              </Label>
+              <Badge variant="success">Валюта: {formatPrice(portfolio.totalAmountCurrencies)} ₽</Badge>
             )}
           </div>
 
           {/* Positions */}
-          <div className={styles['portfolio-page__section']}>
-            <div className={styles['portfolio-page__section-title']}>
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">
               Позиции ({portfolio.positions.length})
-            </div>
+            </h3>
             {portfolio.positions.length > 0 ? (
-              <div className={styles['portfolio-page__positions']}>
+              <div className="space-y-2">
                 {portfolio.positions.map((position, i) => (
                   <PositionCard key={position.figi} position={position} delay={i * 40} />
                 ))}
               </div>
             ) : (
               <EmptyState
-                icon={<Briefcase />}
+                icon={<Briefcase className="w-6 h-6" />}
                 title="Нет позиций"
                 description="В портфеле пока нет открытых позиций"
               />
             )}
           </div>
-        </>
+        </div>
       ) : (
         <EmptyState
-          icon={<Briefcase />}
+          icon={<Briefcase className="w-6 h-6" />}
           title="Нет данных"
           description="Не удалось загрузить данные портфеля. Проверьте настройки API-токена."
         />

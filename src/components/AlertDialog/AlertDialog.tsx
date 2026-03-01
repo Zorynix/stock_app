@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, TextInput, Text } from '@gravity-ui/uikit';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import type { TrackedInstrumentResponse } from '@/types/api';
-import styles from './AlertDialog.module.scss';
 
 interface AlertDialogProps {
   open: boolean;
@@ -42,87 +49,72 @@ export function AlertDialog({
   }, [editData, currentPrice, open]);
 
   const handleSubmit = () => {
-    console.log('[AlertDialog] handleSubmit called', { buyPrice, sellPrice });
     const buy = parseFloat(buyPrice);
     const sell = parseFloat(sellPrice);
 
     if (isNaN(buy) || isNaN(sell)) {
-      console.log('[AlertDialog] NaN check failed', { buy, sell });
       setError('Введите корректные числа');
       return;
     }
     if (buy <= 0 || sell <= 0) {
-      console.log('[AlertDialog] <= 0 check failed');
       setError('Цены должны быть больше нуля');
       return;
     }
     if (buy >= sell) {
-      console.log('[AlertDialog] buy >= sell check failed');
       setError('Цена покупки должна быть меньше цены продажи');
       return;
     }
 
-    console.log('[AlertDialog] calling onSubmit', { buy, sell });
     onSubmit(buy, sell);
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <div style={{ padding: '24px', minWidth: '320px' }}>
-        <div style={{ marginBottom: '4px' }}>
-          <Text variant="header-1">
-            {editData ? 'Редактировать алерт' : 'Создать алерт'}
-          </Text>
-        </div>
-        <div style={{ marginBottom: '4px' }}>
-          <Text variant="body-1" color="brand">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{editData ? 'Редактировать алерт' : 'Создать алерт'}</DialogTitle>
+          <p className="text-sm text-primary font-medium mt-1">
             {instrumentName}
-          </Text>
-          {currentPrice != null && (
-            <Text variant="body-1" color="positive">
-              {' '}• {currentPrice.toFixed(2)} ₽
-            </Text>
-          )}
-        </div>
+            {currentPrice != null && (
+              <span className="text-positive ml-2">• {currentPrice.toFixed(2)} ₽</span>
+            )}
+          </p>
+        </DialogHeader>
 
-        <div className={styles['alert-dialog__form']}>
-          <div className={styles['alert-dialog__field']}>
-            <label className={styles['alert-dialog__label']}>
-              Цена покупки (уведомить, когда цена упадёт ниже)
-            </label>
-            <TextInput
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="buy-price">Цена покупки (уведомить, когда цена упадёт ниже)</Label>
+            <Input
+              id="buy-price"
               value={buyPrice}
-              onUpdate={setBuyPrice}
+              onChange={(e) => setBuyPrice(e.target.value)}
               placeholder="0.00"
-              size="l"
               autoFocus
             />
           </div>
 
-          <div className={styles['alert-dialog__field']}>
-            <label className={styles['alert-dialog__label']}>
-              Цена продажи (уведомить, когда цена поднимется выше)
-            </label>
-            <TextInput
+          <div className="space-y-1.5">
+            <Label htmlFor="sell-price">Цена продажи (уведомить, когда цена поднимется выше)</Label>
+            <Input
+              id="sell-price"
               value={sellPrice}
-              onUpdate={setSellPrice}
+              onChange={(e) => setSellPrice(e.target.value)}
               placeholder="0.00"
-              size="l"
             />
           </div>
 
-          {error && <div className={styles['alert-dialog__error']}>{error}</div>}
+          {error && <p className="text-sm text-negative">{error}</p>}
 
-          <div className={styles['alert-dialog__footer']}>
-            <Button view="flat" size="l" onClick={onClose}>
+          <div className="flex gap-2 pt-2">
+            <Button variant="ghost" className="flex-1" onClick={onClose}>
               Отмена
             </Button>
-            <Button view="action" size="l" onClick={handleSubmit} loading={isLoading}>
+            <Button className="flex-1" onClick={handleSubmit} loading={isLoading}>
               {editData ? 'Сохранить' : 'Создать'}
             </Button>
           </div>
         </div>
-      </div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,8 +1,8 @@
-import { Button, Label } from '@gravity-ui/uikit';
-import { Pencil, TrashBin } from '@gravity-ui/icons';
+import { Pencil, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { TrackedInstrumentResponse } from '@/types/api';
 import { formatPrice, formatDate } from '@/utils/format';
-import styles from './TrackedCard.module.scss';
 
 interface TrackedCardProps {
   tracked: TrackedInstrumentResponse;
@@ -11,67 +11,42 @@ interface TrackedCardProps {
   delay?: number;
 }
 
-export function TrackedCard({ tracked, onEdit, onDelete, delay = 0 }: TrackedCardProps) {
+export function TrackedCard({ tracked, onEdit, onDelete }: TrackedCardProps) {
   return (
-    <div
-      className={styles['tracked-card']}
-      style={{ '--delay': `${delay}ms` } as React.CSSProperties}
-    >
-      <div className={styles['tracked-card__header']}>
-        <div>
-          <div className={styles['tracked-card__name']}>{tracked.instrumentName}</div>
-          <div className={styles['tracked-card__figi']}>{tracked.figi}</div>
+    <div className="bg-card border border-card-border rounded-2xl p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-foreground">{tracked.instrumentName}</div>
+          <div className="text-xs text-muted-foreground">{tracked.figi}</div>
         </div>
-        <div className={styles['tracked-card__actions']}>
-          <Button view="flat" size="s" onClick={() => onEdit(tracked)}>
-            <Button.Icon>
-              <Pencil />
-            </Button.Icon>
+        <div className="flex gap-1 shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => onEdit(tracked)}>
+            <Pencil className="w-4 h-4" />
           </Button>
-          <Button view="flat" size="s" onClick={() => onDelete(tracked.id)}>
-            <Button.Icon>
-              <TrashBin />
-            </Button.Icon>
+          <Button variant="ghost" size="icon" onClick={() => onDelete(tracked.id)}>
+            <Trash2 className="w-4 h-4 text-negative" />
           </Button>
         </div>
       </div>
 
-      <div className={styles['tracked-card__prices']}>
-        <div
-          className={`${styles['tracked-card__price-block']} ${styles['tracked-card__price-block--buy']}`}
-        >
-          <div className={styles['tracked-card__price-label']}>Покупка</div>
-          <div className={styles['tracked-card__price-value']}>
-            {formatPrice(tracked.buyPrice)} ₽
-          </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-positive/10 border border-positive/20 rounded-xl p-2.5 text-center">
+          <div className="text-xs text-muted-foreground mb-0.5">Покупка</div>
+          <div className="text-sm font-semibold text-positive">{formatPrice(tracked.buyPrice)} ₽</div>
         </div>
-        <div
-          className={`${styles['tracked-card__price-block']} ${styles['tracked-card__price-block--sell']}`}
-        >
-          <div className={styles['tracked-card__price-label']}>Продажа</div>
-          <div className={styles['tracked-card__price-value']}>
-            {formatPrice(tracked.sellPrice)} ₽
-          </div>
+        <div className="bg-negative/10 border border-negative/20 rounded-xl p-2.5 text-center">
+          <div className="text-xs text-muted-foreground mb-0.5">Продажа</div>
+          <div className="text-sm font-semibold text-negative">{formatPrice(tracked.sellPrice)} ₽</div>
         </div>
       </div>
 
-      <div className={styles['tracked-card__footer']}>
-        <span className={styles['tracked-card__date']}>{formatDate(tracked.createdAt)}</span>
-        <div className={styles['tracked-card__alerts']}>
-          {tracked.buyAlertSent && (
-            <Label theme="success" size="xs">
-              Покупка ↓
-            </Label>
-          )}
-          {tracked.sellAlertSent && (
-            <Label theme="danger" size="xs">
-              Продажа ↑
-            </Label>
-          )}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">{formatDate(tracked.createdAt)}</span>
+        <div className="flex gap-1">
+          {tracked.buyAlertSent && <Badge variant="success">Покупка ↓</Badge>}
+          {tracked.sellAlertSent && <Badge variant="destructive">Продажа ↑</Badge>}
           {!tracked.buyAlertSent && !tracked.sellAlertSent && (
-            <Label theme="normal" size="xs">
-              Мониторинг
-            </Label>
+            <Badge variant="normal">Мониторинг</Badge>
           )}
         </div>
       </div>

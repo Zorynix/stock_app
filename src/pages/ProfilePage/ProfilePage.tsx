@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Loader, Switch, Text, TextInput } from '@gravity-ui/uikit';
-import { Envelope, LogoTelegram, Bell, ArrowRightFromSquare, TrashBin } from '@gravity-ui/icons';
+import { Mail, LogOut, Trash2, Bell, User } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useTelegram } from '@/providers/TelegramProvider';
 import {
@@ -14,8 +13,20 @@ import {
   useVerifyAddEmail,
 } from '@/hooks/useProfile';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import type { AddEmailResponse, ConflictResolution, ProfileResponse } from '@/types/api';
-import styles from './ProfilePage.module.scss';
+
+function TelegramIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.88 13.47l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.834.946z" />
+    </svg>
+  );
+}
 
 interface ConflictState {
   webCount: number;
@@ -25,9 +36,9 @@ interface ConflictState {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className={styles['profile-page__stat-card']}>
-      <div className={styles['profile-page__stat-value']}>{value}</div>
-      <div className={styles['profile-page__stat-label']}>{label}</div>
+    <div className="bg-card border border-card-border rounded-xl p-3 text-center">
+      <div className="text-xl font-bold text-foreground">{value}</div>
+      <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
     </div>
   );
 }
@@ -57,7 +68,12 @@ function AddEmailSection() {
       { email: email.trim(), password },
       {
         onSuccess: (resp) => {
-          setPending({ email: email.trim(), action: resp.action, webCount: resp.webCount, telegramCount: resp.telegramCount });
+          setPending({
+            email: email.trim(),
+            action: resp.action,
+            webCount: resp.webCount,
+            telegramCount: resp.telegramCount,
+          });
           setStep('otp');
         },
         onError: (err: unknown) => {
@@ -78,8 +94,6 @@ function AddEmailSection() {
       { email: pending.email, code, resolution: resolution ?? undefined },
       {
         onSuccess: () => {
-          // onSuccess in hook updates localStorage + invalidates profile query
-          // For LINK scenario, reload to get fresh auth state
           if (pending.action === 'LINK') {
             window.location.reload();
           }
@@ -93,34 +107,34 @@ function AddEmailSection() {
 
   if (step === 'form') {
     return (
-      <div className={styles['profile-page__section']}>
-        <div className={styles['profile-page__section-title']}>Добавить email</div>
-        <div className={styles['profile-page__add-email-form']}>
-          <TextInput
-            value={email}
-            onUpdate={setEmail}
-            placeholder="your@email.com"
-            type="email"
-            size="l"
-            autoComplete="email"
-          />
-          <TextInput
-            value={password}
-            onUpdate={setPassword}
-            placeholder="Пароль (мин. 8 символов)"
-            type="password"
-            size="l"
-            autoComplete="new-password"
-          />
-          {error && (
-            <Text color="danger" variant="body-2">
-              {error}
-            </Text>
-          )}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground">Добавить email</h3>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="add-email">Email</Label>
+            <Input
+              id="add-email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              type="email"
+              autoComplete="email"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="add-password">Пароль</Label>
+            <Input
+              id="add-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Пароль (мин. 8 символов)"
+              type="password"
+              autoComplete="new-password"
+            />
+          </div>
+          {error && <p className="text-sm text-negative">{error}</p>}
           <Button
-            view="action"
-            size="l"
-            width="max"
+            className="w-full"
             loading={addEmail.isPending}
             disabled={!email || !password}
             onClick={handleSubmitForm}
@@ -132,85 +146,73 @@ function AddEmailSection() {
     );
   }
 
-  // OTP step
   return (
-    <div className={styles['profile-page__section']}>
-      <div className={styles['profile-page__section-title']}>Подтвердите email</div>
-      <div className={styles['profile-page__add-email-form']}>
-        <Text variant="body-2" color="secondary">
-          Код подтверждения отправлен на{' '}
-          <span style={{ color: 'var(--g-color-text-primary)' }}>{pending?.email}</span>
-        </Text>
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-foreground">Подтвердите email</h3>
+      <p className="text-sm text-muted-foreground">
+        Код подтверждения отправлен на{' '}
+        <span className="text-foreground font-medium">{pending?.email}</span>
+      </p>
 
-        <TextInput
+      <div className="space-y-1.5">
+        <Label htmlFor="otp-code">6-значный код</Label>
+        <Input
+          id="otp-code"
           value={code}
-          onUpdate={setCode}
-          placeholder="6-значный код"
-          size="l"
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="000000"
           autoComplete="one-time-code"
         />
+      </div>
 
-        {pending?.action === 'LINK' && (
-          <div className={styles['profile-page__conflict']}>
-            <Text variant="body-2">
-              Аккаунт с этим email уже существует. У него {pending.webCount} алерт(ов), у вас —{' '}
-              {pending.telegramCount}. Выберите стратегию объединения:
-            </Text>
-            <div className={styles['profile-page__conflict-actions']}>
-              <Button
-                view={resolution === 'KEEP_WEB' ? 'action' : 'outlined'}
-                size="s"
-                onClick={() => setResolution('KEEP_WEB')}
+      {pending?.action === 'LINK' && (
+        <div className="space-y-2 p-3 bg-warning/10 border border-warning/20 rounded-xl">
+          <p className="text-xs text-warning">
+            Аккаунт с этим email уже существует. У него {pending.webCount} алерт(ов), у вас —{' '}
+            {pending.telegramCount}. Выберите стратегию:
+          </p>
+          <div className="flex gap-2">
+            {(['KEEP_WEB', 'KEEP_TELEGRAM', 'MERGE'] as ConflictResolution[]).map((r) => (
+              <button
+                key={r}
+                className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                  resolution === r
+                    ? 'bg-primary/15 border-primary/40 text-primary'
+                    : 'border-card-border text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setResolution(r)}
+                type="button"
               >
-                Оставить web
-              </Button>
-              <Button
-                view={resolution === 'KEEP_TELEGRAM' ? 'action' : 'outlined'}
-                size="s"
-                onClick={() => setResolution('KEEP_TELEGRAM')}
-              >
-                Оставить мои
-              </Button>
-              <Button
-                view={resolution === 'MERGE' ? 'action' : 'outlined'}
-                size="s"
-                onClick={() => setResolution('MERGE')}
-              >
-                Объединить
-              </Button>
-            </div>
+                {r === 'KEEP_WEB' ? 'Оставить web' : r === 'KEEP_TELEGRAM' ? 'Мои алерты' : 'Объединить'}
+              </button>
+            ))}
           </div>
-        )}
-
-        {error && (
-          <Text color="danger" variant="body-2">
-            {error}
-          </Text>
-        )}
-
-        <div className={styles['profile-page__add-email-footer']}>
-          <Button
-            view="flat"
-            size="l"
-            onClick={() => {
-              setStep('form');
-              setCode('');
-              setError('');
-              setResolution(null);
-            }}
-          >
-            Назад
-          </Button>
-          <Button
-            view="action"
-            size="l"
-            loading={verifyAddEmail.isPending}
-            disabled={code.length !== 6}
-            onClick={handleVerify}
-          >
-            Подтвердить
-          </Button>
         </div>
+      )}
+
+      {error && <p className="text-sm text-negative">{error}</p>}
+
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          className="flex-1"
+          onClick={() => {
+            setStep('form');
+            setCode('');
+            setError('');
+            setResolution(null);
+          }}
+        >
+          Назад
+        </Button>
+        <Button
+          className="flex-1"
+          loading={verifyAddEmail.isPending}
+          disabled={code.length !== 6}
+          onClick={handleVerify}
+        >
+          Подтвердить
+        </Button>
       </div>
     </div>
   );
@@ -270,166 +272,163 @@ function ProfileContent({ profile }: { profile: ProfileResponse }) {
   const { alertStats } = profile;
 
   return (
-    <div className={styles['profile-page']}>
+    <div className="flex flex-col min-h-full">
       <PageHeader title="Профиль" subtitle="Управление аккаунтом и настройки" />
 
-      {/* Идентификация */}
-      <div className={styles['profile-page__section']}>
-        <div className={styles['profile-page__section-title']}>Аккаунт</div>
-
-        <div className={styles['profile-page__info-card']}>
-          {profile.email && (
-            <div className={styles['profile-page__info-row']}>
-              <Envelope className={styles['profile-page__info-icon']} />
-              <div className={styles['profile-page__info-content']}>
-                <div className={styles['profile-page__info-label']}>Email</div>
-                <div className={styles['profile-page__info-value']}>{profile.email}</div>
+      <div className="px-4 space-y-4 pb-6">
+        {/* Account info */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Аккаунт</h3>
+          <div className="bg-card border border-card-border rounded-2xl divide-y divide-card-border">
+            {profile.email && (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="text-sm text-foreground truncate">{profile.email}</p>
+                </div>
+                <Badge variant={profile.emailConfirmed ? 'success' : 'warning'}>
+                  {profile.emailConfirmed ? 'Подтверждён' : 'Не подтверждён'}
+                </Badge>
               </div>
-              {profile.emailConfirmed ? (
-                <span className={styles['profile-page__badge--confirmed']}>Подтверждён</span>
-              ) : (
-                <span className={styles['profile-page__badge--pending']}>Не подтверждён</span>
-              )}
+            )}
+
+            {profile.telegramId && (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <TelegramIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground">Telegram</p>
+                  <p className="text-sm text-foreground">ID: {profile.telegramId}</p>
+                </div>
+                <Badge variant="success">Привязан</Badge>
+              </div>
+            )}
+
+            {!profile.email && !profile.telegramId && (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <User className="w-4 h-4 text-muted-foreground shrink-0" />
+                <p className="text-sm text-muted-foreground">Нет привязанного аккаунта</p>
+              </div>
+            )}
+          </div>
+
+          {/* Email not confirmed warning */}
+          {profile.email && !profile.emailConfirmed && (
+            <div className="flex items-center justify-between gap-3 p-3 bg-warning/10 border border-warning/20 rounded-xl">
+              <p className="text-xs text-warning flex-1">
+                Подтвердите email, чтобы получать уведомления о ценах.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 border-warning/40 text-warning hover:bg-warning/10"
+                onClick={() => navigate('/confirm-email')}
+              >
+                Подтвердить
+              </Button>
             </div>
           )}
 
-          {profile.telegramId && (
-            <div className={styles['profile-page__info-row']}>
-              <LogoTelegram className={styles['profile-page__info-icon']} />
-              <div className={styles['profile-page__info-content']}>
-                <div className={styles['profile-page__info-label']}>Telegram</div>
-                <div className={styles['profile-page__info-value']}>ID: {profile.telegramId}</div>
+          {/* Link Telegram */}
+          {!profile.telegramLinked && isTelegram && initData && (
+            <div className="flex items-center gap-3 p-3 bg-card border border-card-border rounded-xl">
+              <TelegramIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+              <p className="flex-1 text-sm text-foreground">Привязать Telegram-аккаунт</p>
+              <Button
+                size="sm"
+                variant="outline"
+                loading={linkTelegram.isPending}
+                onClick={handleLinkTelegram}
+              >
+                Привязать
+              </Button>
+            </div>
+          )}
+
+          {/* Conflict resolution */}
+          {conflict && (
+            <div className="p-3 space-y-2 bg-warning/10 border border-warning/20 rounded-xl">
+              <p className="text-xs text-warning">
+                У вас есть алерты в обоих аккаунтах ({conflict.webCount} web /{' '}
+                {conflict.telegramCount} Telegram). Выберите действие:
+              </p>
+              <div className="flex gap-2">
+                {(['KEEP_WEB', 'KEEP_TELEGRAM', 'MERGE'] as const).map((r) => (
+                  <Button
+                    key={r}
+                    variant={r === 'MERGE' ? 'default' : 'outline'}
+                    size="sm"
+                    className="flex-1 text-xs"
+                    loading={resolveConflict.isPending}
+                    onClick={() => handleResolveConflict(r)}
+                  >
+                    {r === 'KEEP_WEB' ? 'Web' : r === 'KEEP_TELEGRAM' ? 'Telegram' : 'Объединить'}
+                  </Button>
+                ))}
               </div>
-              <span className={styles['profile-page__badge--confirmed']}>Привязан</span>
             </div>
           )}
         </div>
 
-        {/* Email не подтверждён */}
-        {profile.email && !profile.emailConfirmed && (
-          <div className={styles['profile-page__warning']}>
-            <Text variant="body-2" color="warning">
-              Подтвердите email, чтобы получать уведомления о ценах.
-            </Text>
-            <Button
-              view="outlined-warning"
-              size="s"
-              onClick={() => navigate('/confirm-email')}
-            >
-              Подтвердить
-            </Button>
+        {/* Add email for Telegram users */}
+        {isTelegram && !profile.email && (
+          <div className="bg-card border border-card-border rounded-2xl p-4">
+            <AddEmailSection />
           </div>
         )}
 
-        {/* Привязка Telegram */}
-        {!profile.telegramLinked && isTelegram && initData && (
-          <div className={styles['profile-page__action-row']}>
-            <LogoTelegram />
-            <Text variant="body-2">Привязать Telegram-аккаунт</Text>
-            <Button
-              view="outlined"
-              size="s"
-              loading={linkTelegram.isPending}
-              onClick={handleLinkTelegram}
-            >
-              Привязать
-            </Button>
+        {/* Stats */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Статистика алертов
+          </h3>
+          <div className="grid grid-cols-4 gap-2">
+            <StatCard label="Всего" value={alertStats.total} />
+            <StatCard label="Активных" value={alertStats.active} />
+            <StatCard label="Покупка" value={alertStats.buyAlertTriggered} />
+            <StatCard label="Продажа" value={alertStats.sellAlertTriggered} />
           </div>
-        )}
+        </div>
 
-        {/* Конфликт при привязке */}
-        {conflict && (
-          <div className={styles['profile-page__conflict']}>
-            <Text variant="body-2">
-              У вас есть алерты в обоих аккаунтах ({conflict.webCount} web /{' '}
-              {conflict.telegramCount} Telegram). Выберите действие:
-            </Text>
-            <div className={styles['profile-page__conflict-actions']}>
-              <Button
-                view="outlined"
-                size="s"
-                loading={resolveConflict.isPending}
-                onClick={() => handleResolveConflict('KEEP_WEB')}
-              >
-                Оставить web
-              </Button>
-              <Button
-                view="outlined"
-                size="s"
-                loading={resolveConflict.isPending}
-                onClick={() => handleResolveConflict('KEEP_TELEGRAM')}
-              >
-                Оставить Telegram
-              </Button>
-              <Button
-                view="action"
-                size="s"
-                loading={resolveConflict.isPending}
-                onClick={() => handleResolveConflict('MERGE')}
-              >
-                Объединить
-              </Button>
+        {/* Notification toggle */}
+        {profile.emailConfirmed && (
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Уведомления
+            </h3>
+            <div className="flex items-center gap-3 bg-card border border-card-border rounded-xl px-4 py-3">
+              <Bell className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-foreground">Email-уведомления</p>
+                <p className="text-xs text-muted-foreground">Получать уведомления о ценах на почту</p>
+              </div>
+              <Switch
+                checked={profile.emailNotificationsEnabled}
+                onCheckedChange={(checked) => updateNotifications.mutate(checked)}
+                disabled={updateNotifications.isPending}
+              />
             </div>
           </div>
         )}
-      </div>
 
-      {/* Добавление email к Telegram-аккаунту */}
-      {isTelegram && !profile.email && <AddEmailSection />}
-
-      {/* Статистика */}
-      <div className={styles['profile-page__section']}>
-        <div className={styles['profile-page__section-title']}>Статистика алертов</div>
-        <div className={styles['profile-page__stats']}>
-          <StatCard label="Всего" value={alertStats.total} />
-          <StatCard label="Активных" value={alertStats.active} />
-          <StatCard label="Покупка" value={alertStats.buyAlertTriggered} />
-          <StatCard label="Продажа" value={alertStats.sellAlertTriggered} />
+        {/* Actions */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Действия
+          </h3>
+          <Button variant="outline" size="lg" className="w-full" onClick={logout}>
+            <LogOut className="w-4 h-4" /> Выйти из аккаунта
+          </Button>
+          <Button
+            variant="outline-destructive"
+            size="lg"
+            className="w-full"
+            loading={deleteAccount.isPending}
+            onClick={handleDeleteAccount}
+          >
+            <Trash2 className="w-4 h-4" /> Удалить аккаунт
+          </Button>
         </div>
-      </div>
-
-      {/* Настройки уведомлений */}
-      {profile.emailConfirmed && (
-        <div className={styles['profile-page__section']}>
-          <div className={styles['profile-page__section-title']}>Уведомления</div>
-          <div className={styles['profile-page__setting-row']}>
-            <Bell />
-            <div className={styles['profile-page__setting-info']}>
-              <Text variant="body-2">Email-уведомления</Text>
-              <Text variant="caption-2" color="secondary">
-                Получать уведомления о ценах на почту
-              </Text>
-            </div>
-            <Switch
-              checked={profile.emailNotificationsEnabled}
-              onUpdate={(checked) => updateNotifications.mutate(checked)}
-              disabled={updateNotifications.isPending}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Действия */}
-      <div className={styles['profile-page__section']}>
-        <Button view="outlined" size="l" width="max" onClick={logout}>
-          <Button.Icon>
-            <ArrowRightFromSquare />
-          </Button.Icon>
-          Выйти из аккаунта
-        </Button>
-
-        <Button
-          view="outlined-danger"
-          size="l"
-          width="max"
-          loading={deleteAccount.isPending}
-          onClick={handleDeleteAccount}
-        >
-          <Button.Icon>
-            <TrashBin />
-          </Button.Icon>
-          Удалить аккаунт
-        </Button>
       </div>
     </div>
   );
@@ -440,18 +439,24 @@ export function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className={styles['profile-page__loading']}>
-        <Loader size="l" />
+      <div className="flex justify-center py-12">
+        <svg
+          className="animate-spin h-8 w-8 text-primary"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
       </div>
     );
   }
 
   if (isError || !profile) {
     return (
-      <div className={styles['profile-page__loading']}>
-        <Text color="danger" variant="body-2">
-          Не удалось загрузить профиль
-        </Text>
+      <div className="flex justify-center py-12">
+        <p className="text-sm text-negative">Не удалось загрузить профиль</p>
       </div>
     );
   }
