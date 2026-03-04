@@ -63,6 +63,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Слушаем событие auth:expired от axios-интерцептора (401 в web-режиме)
+  useEffect(() => {
+    const handleExpired = () => {
+      setAuthUser(null);
+      setPendingEmail(null);
+      setStoredAuth(null);
+    };
+    window.addEventListener('auth:expired', handleExpired);
+    return () => window.removeEventListener('auth:expired', handleExpired);
+  }, []);
+
   const persist = (user: AuthResponse) => {
     setAuthUser(user);
     setStoredAuth(user);
