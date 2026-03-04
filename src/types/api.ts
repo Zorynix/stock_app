@@ -68,55 +68,6 @@ export interface ApiError {
   errors?: Record<string, string>;
 }
 
-// ─── Portfolio DTOs ────────────────────────────────────────────
-
-export interface AccountDto {
-  id: string;
-  name: string;
-  type: string;
-  status: string;
-  accessLevel: string;
-  openedDate: string;
-}
-
-export interface PositionDto {
-  figi: string;
-  instrumentUid: string;
-  instrumentType: string;
-  name: string;
-  quantity: number;
-  averagePrice: number;
-  currentPrice: number;
-  expectedYield: number;
-  expectedYieldPercent: number;
-  currency: string;
-}
-
-export interface PortfolioResponse {
-  accountId: string;
-  totalAmountShares: number;
-  totalAmountBonds: number;
-  totalAmountEtf: number;
-  totalAmountCurrencies: number;
-  totalAmountFutures: number;
-  totalPortfolioValue: number;
-  expectedYield: number;
-  positions: PositionDto[];
-}
-
-export interface OperationDto {
-  id: string;
-  figi: string;
-  instrumentType: string;
-  instrumentName: string;
-  operationType: string;
-  state: string;
-  payment: number;
-  price: number;
-  quantity: number;
-  currency: string;
-  date: string;
-}
 
 // ─── Notification DTOs ─────────────────────────────────────────
 

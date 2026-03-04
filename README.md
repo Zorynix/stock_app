@@ -1,7 +1,7 @@
 # StockApp — Telegram Mini App
 
 Telegram Mini App для работы с рынком акций: поиск инструментов, ценовые алерты,
-портфель, уведомления и отчёты.
+уведомления и отчёты.
 
 ---
 
@@ -51,7 +51,6 @@ bun run build
 | `/search` | SearchPage | Поиск акций по названию |
 | `/instruments/:figi` | InstrumentPage | График цен + управление алертами |
 | `/tracked` | TrackedPage | Все активные ценовые алерты |
-| `/portfolio` | PortfolioPage | Портфель (счета, позиции) |
 | `/notifications` | NotificationsPage | История срабатывания алертов |
 | `/analytics` | AnalyticsPage | AI-аналитика (roadmap) |
 | `/profile` | ProfilePage | Профиль, email/Telegram, уведомления |
@@ -70,13 +69,12 @@ bun run build
 
 | Файл | Сервис | Описание |
 |------|--------|----------|
-| `auth.ts` | AuthService (8082) | Регистрация, вход, OTP |
-| `profile.ts` | AuthService (8082) | Профиль, email, Telegram-связка |
+| `auth.ts` | AuthService (8081) | Регистрация, вход, OTP |
+| `profile.ts` | AuthService (8081) | Профиль, email, Telegram-связка |
 | `instruments.ts` | MarketDataService (8080) | Поиск акций, свечи |
-| `tracked.ts` | AlertService (8083) | CRUD ценовых алертов |
-| `notifications.ts` | AlertService (8083) | История уведомлений |
-| `reports.ts` | AlertService (8083) | Скачивание отчётов (PDF/MD) |
-| `portfolio.ts` | PortfolioService (8081) | Счета, позиции, операции |
+| `tracked.ts` | AlertService (8082) | CRUD ценовых алертов |
+| `notifications.ts` | AlertService (8082) | История уведомлений |
+| `reports.ts` | AlertService (8082) | Скачивание отчётов (PDF/MD) |
 
 Базовый клиент (`client.ts`) — Axios instance с автоматической подстановкой JWT-токена
 из localStorage и заголовка `X-Telegram-Init-Data` для Telegram-авторизации.
@@ -114,13 +112,11 @@ React Query обёртки над API-функциями. Содержат queri
 В dev-режиме Vite проксирует запросы по префиксу пути. Порядок важен (специфичные раньше catch-all):
 
 ```
-/api/auth/**               → http://localhost:8082  (AuthService)
-/api/profile/**            → http://localhost:8082  (AuthService)
-/api/tracked-instruments/**→ http://localhost:8083  (AlertService)
-/api/notifications/**      → http://localhost:8083  (AlertService)
-/api/reports/**            → http://localhost:8083  (AlertService)
-/api/portfolio/**          → http://localhost:8081  (PortfolioService)
-/api/accounts/**           → http://localhost:8081  (PortfolioService)
+/api/auth/**               → http://localhost:8081  (AuthService)
+/api/profile/**            → http://localhost:8081  (AuthService)
+/api/tracked-instruments/**→ http://localhost:8082  (AlertService)
+/api/notifications/**      → http://localhost:8082  (AlertService)
+/api/reports/**            → http://localhost:8082  (AlertService)
 /api/**                    → http://localhost:8080  (MarketDataService, catch-all)
 ```
 
@@ -164,7 +160,6 @@ webapp/
 - `TrackedInstrumentRequest`, `TrackedInstrumentResponse` — AlertService
 - `NotificationResponse` — AlertService
 - `AuthResponse`, `ProfileResponse` — AuthService
-- `AccountDto`, `PortfolioResponse`, `PositionDto`, `OperationDto` — PortfolioService
 
 `TrackedInstrumentResponse.appUserId` — UUID string (не число).
 `CandleDto.time` — ISO 8601 UTC строка.
