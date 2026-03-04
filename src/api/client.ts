@@ -45,9 +45,9 @@ apiClient.interceptors.response.use(
     if (axios.isAxiosError(error) && error.response) {
       const status = error.response.status;
 
-      if (status === 401) {
+      if (status === 401 || status === 403) {
         const initData = window.Telegram?.WebApp?.initData;
-        if (initData && !error.config?.url?.includes('/auth/telegram')) {
+        if (status === 401 && initData && !error.config?.url?.includes('/auth/telegram')) {
           try {
             const { data } = await axios.post(
               (import.meta.env.VITE_API_BASE_URL || '/api') + '/auth/telegram',
@@ -62,6 +62,10 @@ apiClient.interceptors.response.use(
           } catch {
             setStoredAuth(null);
           }
+        } else if (!initData) {
+          // Web-режим: токен невалиден — очищаем auth и уведомляем приложение
+          setStoredAuth(null);
+          window.dispatchEvent(new CustomEvent('auth:expired'));
         }
       }
 

@@ -15,6 +15,7 @@ interface ReportDialogProps {
   onDownload: (period: ReportPeriod, format: ReportFormat) => void;
   instrumentName: string;
   isLoading?: boolean;
+  error?: string | null;
 }
 
 const PERIODS: { key: ReportPeriod; label: string }[] = [
@@ -35,6 +36,7 @@ export function ReportDialog({
   onDownload,
   instrumentName,
   isLoading,
+  error,
 }: ReportDialogProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>('1m');
   const [selectedFormat, setSelectedFormat] = useState<ReportFormat>('pdf');
@@ -101,6 +103,8 @@ export function ReportDialog({
               ))}
             </div>
           </div>
+
+          {error && <p className="text-sm text-negative">{error}</p>}
 
           <div className="flex gap-2 pt-1">
             <Button variant="ghost" className="flex-1" onClick={onClose}>

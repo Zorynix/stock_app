@@ -19,6 +19,7 @@ interface AlertDialogProps {
   currentPrice?: number;
   editData?: TrackedInstrumentResponse | null;
   isLoading?: boolean;
+  serverError?: string | null;
 }
 
 export function AlertDialog({
@@ -29,6 +30,7 @@ export function AlertDialog({
   currentPrice,
   editData,
   isLoading,
+  serverError,
 }: AlertDialogProps) {
   const [buyPrice, setBuyPrice] = useState('');
   const [sellPrice, setSellPrice] = useState('');
@@ -103,7 +105,9 @@ export function AlertDialog({
             />
           </div>
 
-          {error && <p className="text-sm text-negative">{error}</p>}
+          {(error || serverError) && (
+            <p className="text-sm text-negative">{error || serverError}</p>
+          )}
 
           <div className="flex gap-2 pt-2">
             <Button variant="ghost" className="flex-1" onClick={onClose}>
