@@ -35,15 +35,7 @@ export default defineConfig({
         target: 'http://localhost:8083',
         changeOrigin: true,
       },
-      '/api/portfolio': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-      },
-      '/api/accounts': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-      },
-      '/api': {
+'/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
