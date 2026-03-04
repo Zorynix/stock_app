@@ -15,6 +15,26 @@ export default defineConfig({
     port: 3000,
     allowedHosts: true,
     proxy: {
+      '/api/auth': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+      },
+      '/api/profile': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+      },
+      '/api/tracked-instruments': {
+        target: 'http://localhost:8083',
+        changeOrigin: true,
+      },
+      '/api/notifications': {
+        target: 'http://localhost:8083',
+        changeOrigin: true,
+      },
+      '/api/reports': {
+        target: 'http://localhost:8083',
+        changeOrigin: true,
+      },
       '/api/portfolio': {
         target: 'http://localhost:8081',
         changeOrigin: true,
