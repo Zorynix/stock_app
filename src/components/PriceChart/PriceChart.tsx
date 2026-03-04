@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { createChart, type IChartApi, ColorType } from 'lightweight-charts';
+import { createChart, type IChartApi, ColorType, type UTCTimestamp } from 'lightweight-charts';
 import { TrendingUp, BarChart2 } from 'lucide-react';
 import { useCandles } from '@/hooks/useInstruments';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,9 @@ function getDateRange(days: number) {
   };
 }
 
+/** Intraday periods where candles have minute/hour granularity. */
+const INTRADAY_PERIODS: PeriodKey[] = ['1D', '1W'];
+
 export function PriceChart({ figi }: PriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -41,6 +44,8 @@ export function PriceChart({ figi }: PriceChartProps) {
   );
 
   const { data: candles, isLoading } = useCandles(figi, from, to);
+
+  const isIntraday = INTRADAY_PERIODS.includes(activePeriod);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -62,7 +67,7 @@ export function PriceChart({ figi }: PriceChartProps) {
       rightPriceScale: { borderVisible: false },
       timeScale: {
         borderVisible: false,
-        timeVisible: activePeriod === '1D',
+        timeVisible: isIntraday,
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true },
       handleScale: { mouseWheel: true, pinch: true },
@@ -83,11 +88,18 @@ export function PriceChart({ figi }: PriceChartProps) {
       });
 
       if (candles && candles.length > 0) {
-        const seriesData = candles.map((candle, index) => {
-          const date = new Date(from);
-          date.setDate(date.getDate() + index);
+        const seriesData = candles.map((candle) => {
+          if (isIntraday) {
+            return {
+              time: Math.floor(new Date(candle.time).getTime() / 1000) as UTCTimestamp,
+              open: candle.open,
+              high: candle.high,
+              low: candle.low,
+              close: candle.close,
+            };
+          }
           return {
-            time: date.toISOString().split('T')[0] as `${number}-${number}-${number}`,
+            time: candle.time.split('T')[0] as `${number}-${number}-${number}`,
             open: candle.open,
             high: candle.high,
             low: candle.low,
@@ -111,11 +123,15 @@ export function PriceChart({ figi }: PriceChartProps) {
       });
 
       if (candles && candles.length > 0) {
-        const seriesData = candles.map((candle, index) => {
-          const date = new Date(from);
-          date.setDate(date.getDate() + index);
+        const seriesData = candles.map((candle) => {
+          if (isIntraday) {
+            return {
+              time: Math.floor(new Date(candle.time).getTime() / 1000) as UTCTimestamp,
+              value: candle.close,
+            };
+          }
           return {
-            time: date.toISOString().split('T')[0] as `${number}-${number}-${number}`,
+            time: candle.time.split('T')[0] as `${number}-${number}-${number}`,
             value: candle.close,
           };
         });
@@ -136,7 +152,7 @@ export function PriceChart({ figi }: PriceChartProps) {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [candles, from, activePeriod, chartMode]);
+  }, [candles, isIntraday, chartMode]);
 
   return (
     <div className="space-y-3">

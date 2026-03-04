@@ -11,6 +11,7 @@ export interface CandleDto {
   high: number;
   low: number;
   close: number;
+  time: string;
 }
 
 // ─── Tracked Instrument DTOs ───────────────────────────────────
@@ -35,7 +36,7 @@ export interface TrackedInstrumentResponse {
   buyAlertSent: boolean;
   sellAlertSent: boolean;
   createdAt: string;
-  userId: number;
+  appUserId: string;
 }
 
 // ─── Period ────────────────────────────────────────────────────
