@@ -1,104 +1,99 @@
 import { useNavigate } from 'react-router-dom';
-import { Button, Loader } from '@gravity-ui/uikit';
-import {
-  BellDot,
-  ChartLine,
-  Briefcase,
-  Cpu,
-  SquareArticle,
-  ArrowRight,
-} from '@gravity-ui/icons';
+import { BellDot, TrendingUp, Bell, ArrowRight, Rocket } from 'lucide-react';
 import { useTelegram } from '@/providers/TelegramProvider';
-import { useTrackedInstruments } from '@/hooks/useTracked';
+import { useTrackedInstruments, useDeleteTracked } from '@/hooks/useTracked';
 import { ServiceCard } from '@/components/ServiceCard/ServiceCard';
 import { TrackedCard } from '@/components/TrackedCard/TrackedCard';
-import styles from './DashboardPage.module.scss';
+import { Button } from '@/components/ui/button';
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { user } = useTelegram();
-  const userId = user?.id ?? null;
-  const { data: trackedList, isLoading } = useTrackedInstruments(userId);
+  const { user, showConfirm, hapticFeedback } = useTelegram();
+  const { data: trackedList, isLoading } = useTrackedInstruments();
+  const deleteMutation = useDeleteTracked();
+
+  const handleDelete = async (id: string) => {
+    const confirmed = await showConfirm('Удалить этот алерт?');
+    if (confirmed) {
+      deleteMutation.mutate(id, {
+        onSuccess: () => hapticFeedback('notification'),
+      });
+    }
+  };
 
   return (
-    <div className={styles.dashboard}>
+    <div className="px-4 py-6 space-y-6">
       {/* Greeting */}
-      <div className={styles.dashboard__greeting}>
-        <div className={styles['dashboard__greeting-text']}>Добро пожаловать,</div>
-        <div className={styles['dashboard__greeting-name']}>
+      <div>
+        <p className="text-sm text-muted-foreground">Добро пожаловать,</p>
+        <h2 className="text-2xl font-bold text-foreground">
           {user?.first_name ?? 'Инвестор'} 👋
-        </div>
+        </h2>
       </div>
 
       {/* Services */}
-      <div className={styles.dashboard__section}>
-        <div className={styles['dashboard__section-header']}>
-          <span className={styles['dashboard__section-title']}>Сервисы</span>
-        </div>
-        <div className={styles.dashboard__services}>
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          Сервисы
+        </h3>
+        <div className="space-y-2">
           <ServiceCard
             name="Рынок"
             description="Поиск акций, графики цен, алерты на покупку и продажу"
-            icon={<ChartLine />}
-            iconBg="linear-gradient(135deg, #ffbe5c, #e6a030)"
+            icon={<TrendingUp className="w-5 h-5" />}
+            iconBg="linear-gradient(135deg, #a855f7, #7c3aed)"
             onClick={() => navigate('/search')}
-            delay={50}
-          />
-          <ServiceCard
-            name="Портфель"
-            description="Управление портфелем, учёт позиций и P&L"
-            icon={<Briefcase />}
-            iconBg="linear-gradient(135deg, #34c759, #28a745)"
-            onClick={() => navigate('/portfolio')}
-            delay={100}
-          />
-          <ServiceCard
-            name="Аналитика"
-            description="AI-аналитика, рекомендации и скринеры"
-            icon={<Cpu />}
-            iconBg="linear-gradient(135deg, #af52de, #8b3ec7)"
-            onClick={() => navigate('/analytics')}
-            badge="Скоро"
-            disabled
-            delay={150}
           />
           <ServiceCard
             name="Уведомления"
             description="История алертов и Telegram-уведомления"
-            icon={<SquareArticle />}
-            iconBg="linear-gradient(135deg, #ff9500, #e68600)"
+            icon={<Bell className="w-5 h-5" />}
+            iconBg="linear-gradient(135deg, #8b5cf6, #6d28d9)"
             onClick={() => navigate('/notifications')}
-            delay={200}
+          />
+          <ServiceCard
+            name="Roadmap"
+            description="Планы развития и новые функции приложения"
+            icon={<Rocket className="w-5 h-5" />}
+            iconBg="linear-gradient(135deg, #c084fc, #a855f7)"
+            onClick={() => navigate('/roadmap')}
           />
         </div>
       </div>
 
       {/* Active Tracked Instruments */}
-      <div className={styles.dashboard__section}>
-        <div className={styles['dashboard__section-header']}>
-          <span className={styles['dashboard__section-title']}>Активные алерты</span>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Активные алерты
+          </h3>
           {trackedList && trackedList.length > 0 && (
-            <Button view="flat" size="s" onClick={() => navigate('/tracked')}>
-              Все
-              <Button.Icon side="end">
-                <ArrowRight />
-              </Button.Icon>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/tracked')}>
+              Все <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </Button>
           )}
         </div>
 
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}>
-            <Loader size="m" />
+          <div className="flex justify-center py-8">
+            <svg
+              className="animate-spin h-6 w-6 text-primary"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
           </div>
         ) : (
-          <div className={styles['dashboard__tracked-list']}>
+          <div className="space-y-2">
             {trackedList?.slice(0, 3).map((tracked, i) => (
               <TrackedCard
                 key={tracked.id}
                 tracked={tracked}
                 onEdit={() => navigate('/tracked')}
-                onDelete={() => {}}
+                onDelete={handleDelete}
                 delay={i * 50}
               />
             ))}
@@ -106,10 +101,9 @@ export function DashboardPage() {
               <ServiceCard
                 name="Нет активных алертов"
                 description="Найдите акцию и установите ценовые уведомления"
-                icon={<BellDot />}
-                iconBg="linear-gradient(135deg, #636366, #48484a)"
+                icon={<BellDot className="w-5 h-5" />}
+                iconBg="linear-gradient(135deg, #4c1d95, #3b0764)"
                 onClick={() => navigate('/search')}
-                delay={50}
               />
             )}
           </div>

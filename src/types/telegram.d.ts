@@ -10,6 +10,7 @@ declare global {
         close: () => void;
         enableClosingConfirmation: () => void;
         colorScheme: 'light' | 'dark';
+        initData: string;
         initDataUnsafe: {
           user?: {
             id: number;

@@ -1,86 +1,165 @@
 # StockApp — Telegram Mini App
 
-Telegram Mini App для работы с рынком акций. Построена на React + TypeScript + Gravity UI.
+Telegram Mini App для работы с рынком акций: поиск инструментов, ценовые алерты,
+уведомления и отчёты.
+
+---
 
 ## Стек
 
-- **React 18** + **TypeScript** — UI
-- **Vite** — сборка и dev-сервер
-- **Gravity UI** (`@gravity-ui/uikit`) — дизайн-система компонентов
-- **TanStack Query** — управление серверным состоянием и кэширование
-- **React Router v6** — маршрутизация
-- **Lightweight Charts** — финансовые графики
-- **Axios** — HTTP-клиент
-- **SCSS Modules** — стили
+| Инструмент | Версия / Назначение |
+|-----------|---------------------|
+| **React 18** + **TypeScript** | UI + типизация |
+| **Vite** | Сборка и dev-сервер |
+| **shadcn/ui** | Компоненты (Button, Input, Dialog, Badge, Switch, Select, ...) |
+| **Tailwind CSS v4** | Утилитарные стили (через `@tailwindcss/vite`, без tailwind.config.ts) |
+| **Lucide React** | Иконки |
+| **TanStack Query** | Серверное состояние и кэш (staleTime: 30 с) |
+| **React Router v6** | Маршрутизация |
+| **Lightweight Charts** | Финансовые свечные графики |
+| **Axios** | HTTP-клиент |
+| **bun** | Пакетный менеджер и раннер |
+
+---
+
+## Запуск
+
+```bash
+# Установить зависимости
+bun install
+
+# Dev-сервер (порт 3000, проксирует API)
+bun run dev
+
+# Проверка типов
+bun run type-check
+
+# Линтер (строгий, --max-warnings 0)
+bun run lint
+
+# Production-сборка
+bun run build
+```
+
+---
+
+## Маршруты
+
+| Путь | Страница | Описание |
+|------|----------|----------|
+| `/` | DashboardPage | Главная: сводка по алертам и сервисам |
+| `/search` | SearchPage | Поиск акций по названию |
+| `/instruments/:figi` | InstrumentPage | График цен + управление алертами |
+| `/tracked` | TrackedPage | Все активные ценовые алерты |
+| `/notifications` | NotificationsPage | История срабатывания алертов |
+| `/analytics` | AnalyticsPage | AI-аналитика (roadmap) |
+| `/profile` | ProfilePage | Профиль, email/Telegram, уведомления |
+| `/login` | LoginPage | Вход по email / через Telegram |
+| `/register` | RegisterPage | Регистрация по email |
+| `/confirm-email` | ConfirmEmailPage | Ввод OTP-кода подтверждения email |
+| `/roadmap` | RoadmapPage | Запланированные функции |
+
+---
+
+## Архитектура
+
+### API-слой (`src/api/`)
+
+Один файл на ресурс. Каждый файл содержит функции, которые вызывают Axios с нужным endpoint.
+
+| Файл | Сервис | Описание |
+|------|--------|----------|
+| `auth.ts` | AuthService (8081) | Регистрация, вход, OTP |
+| `profile.ts` | AuthService (8081) | Профиль, email, Telegram-связка |
+| `instruments.ts` | MarketDataService (8080) | Поиск акций, свечи |
+| `tracked.ts` | AlertService (8082) | CRUD ценовых алертов |
+| `notifications.ts` | AlertService (8082) | История уведомлений |
+| `reports.ts` | AlertService (8082) | Скачивание отчётов (PDF/MD) |
+
+Базовый клиент (`client.ts`) — Axios instance с автоматической подстановкой JWT-токена
+из localStorage и заголовка `X-Telegram-Init-Data` для Telegram-авторизации.
+
+### Хуки (`src/hooks/`)
+
+React Query обёртки над API-функциями. Содержат queries (useQuery) и mutations
+(useMutation с инвалидацией кэша).
+
+### Аутентификация
+
+- JWT хранится в `localStorage`
+- Telegram Mini App использует `window.Telegram.WebApp.initData` для авторизации без пароля
+- Вне Telegram — мок-пользователь (ID: 123456789) для разработки
+
+### Стили
+
+- Tailwind v4 подключён через Vite-плагин (`@tailwindcss/vite`)
+- Отдельный `tailwind.config.ts` не нужен
+- Глобальные переменные и базовые стили — `src/styles/globals.css`
+- Цветовая схема: тёмная тема, фиолетовый акцент (`#a855f7`)
+- SCSS Modules для компонентов с нестандартными стилями
+
+### PriceChart
+
+Свечной график на базе `lightweight-charts`:
+- Краткосрочные периоды (1D, 1W): используют `UTCTimestamp` из реального `candle.time`
+- Длинные периоды (1M, 3M, 1Y): используют date-строку `"YYYY-MM-DD"` из `candle.time`
+- `timeScale.timeVisible: true` для внутридневных периодов
+
+---
+
+## API Proxy (vite.config.ts)
+
+В dev-режиме Vite проксирует запросы по префиксу пути. Порядок важен (специфичные раньше catch-all):
+
+```
+/api/auth/**               → http://localhost:8081  (AuthService)
+/api/profile/**            → http://localhost:8081  (AuthService)
+/api/tracked-instruments/**→ http://localhost:8082  (AlertService)
+/api/notifications/**      → http://localhost:8082  (AlertService)
+/api/reports/**            → http://localhost:8082  (AlertService)
+/api/**                    → http://localhost:8080  (MarketDataService, catch-all)
+```
+
+---
 
 ## Структура проекта
 
 ```
 webapp/
-├── public/              # Статические файлы
 ├── src/
-│   ├── api/             # HTTP-клиент и API-функции
-│   ├── components/      # Переиспользуемые компоненты
+│   ├── api/                 # HTTP-функции по ресурсам
+│   ├── components/          # Переиспользуемые компоненты
+│   │   ├── ui/              # shadcn/ui базовые компоненты
 │   │   ├── AlertDialog/     # Диалог создания/редактирования алерта
-│   │   ├── EmptyState/      # Пустое состояние
-│   │   ├── InstrumentCard/  # Карточка инструмента
-│   │   ├── Layout/          # Основной layout с навигацией
-│   │   ├── PageHeader/      # Заголовок страницы
-│   │   ├── PriceChart/      # График цен (Lightweight Charts)
-│   │   ├── ServiceCard/     # Карточка сервиса
-│   │   └── TrackedCard/     # Карточка отслеживаемого инструмента
-│   ├── hooks/           # React Query хуки
-│   ├── pages/           # Страницы приложения
-│   │   ├── DashboardPage/       # Главная — обзор сервисов и алертов
-│   │   ├── SearchPage/         # Поиск акций
-│   │   ├── InstrumentPage/     # Детали инструмента + график + алерты
-│   │   ├── TrackedPage/        # Список всех ценовых алертов
-│   │   ├── PortfolioPage/      # [Заглушка] Портфель
-│   │   ├── AnalyticsPage/      # [Заглушка] AI-аналитика
-│   │   └── NotificationsPage/  # [Заглушка] Новости и события
-│   ├── providers/       # Telegram контекст
-│   ├── styles/          # Глобальные стили
-│   ├── types/           # TypeScript типы
-│   └── utils/           # Утилиты
+│   │   ├── Layout/          # Layout с нижней навигацией
+│   │   ├── PriceChart/      # Свечной график
+│   │   └── ...              # Прочие компоненты
+│   ├── hooks/               # React Query хуки
+│   ├── lib/
+│   │   └── utils.ts         # cn() helper (clsx + tailwind-merge)
+│   ├── pages/               # Страницы (см. таблицу маршрутов)
+│   ├── providers/           # TelegramProvider (контекст Telegram WebApp)
+│   ├── styles/
+│   │   └── globals.css      # CSS-переменные, Tailwind directives
+│   ├── types/
+│   │   └── api.ts           # TypeScript-интерфейсы для всех DTO
+│   └── App.tsx              # Router + маршруты
 ├── index.html
 ├── vite.config.ts
 ├── tsconfig.json
 └── package.json
 ```
 
-## Сервисы
+---
 
-| Сервис | Статус | Описание |
-|--------|--------|----------|
-| **MarketService** | ✅ Подключён | Поиск акций, графики цен, ценовые алерты |
-| **PortfolioService** | 🔜 Заглушка | Управление портфелем, учёт P&L |
-| **AnalyticsService** | 🔜 Заглушка | AI-аналитика, скринеры, рекомендации |
-| **NewsService** | 🔜 Заглушка | Новости, события, календарь отчётностей |
+## Типы (`src/types/api.ts`)
 
-## Запуск
+Все DTO-интерфейсы соответствуют контрактам бэкенда:
 
-```bash
-# Установить зависимости
-npm install
+- `InstrumentDto`, `CandleDto` — MarketDataService
+- `TrackedInstrumentRequest`, `TrackedInstrumentResponse` — AlertService
+- `NotificationResponse` — AlertService
+- `AuthResponse`, `ProfileResponse` — AuthService
 
-# Запустить dev-сервер (порт 3000, прокси → localhost:8080)
-npm run dev
-
-# Production-сборка
-npm run build
-
-# Превью production-сборки
-npm run preview
-```
-
-## API Proxy
-
-В dev-режиме Vite проксирует `/api/*` → `http://localhost:8080/api/*` (MarketService).
-
-## Интеграция с Telegram
-
-Приложение автоматически определяет, запущено ли оно в Telegram:
-- **В Telegram**: использует `window.Telegram.WebApp` для авторизации, haptic feedback, нативных диалогов
-- **Вне Telegram**: работает в dev-режиме с моковым пользователем
-
-Для подключения к боту, укажите URL приложения в настройках Mini App бота через `@BotFather`.
+`TrackedInstrumentResponse.appUserId` — UUID string (не число).
+`CandleDto.time` — ISO 8601 UTC строка.

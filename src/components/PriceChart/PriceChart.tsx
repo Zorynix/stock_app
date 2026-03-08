@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { createChart, type IChartApi, ColorType } from 'lightweight-charts';
-import { Loader } from '@gravity-ui/uikit';
-import { ChartLine, ChartColumn } from '@gravity-ui/icons';
+import { createChart, type IChartApi, ColorType, type UTCTimestamp } from 'lightweight-charts';
+import { TrendingUp, BarChart2 } from 'lucide-react';
 import { useCandles } from '@/hooks/useInstruments';
-import styles from './PriceChart.module.scss';
+import { cn } from '@/lib/utils';
 
 interface PriceChartProps {
   figi: string;
@@ -30,6 +29,9 @@ function getDateRange(days: number) {
   };
 }
 
+/** Intraday periods where candles have minute/hour granularity. */
+const INTRADAY_PERIODS: PeriodKey[] = ['1D', '1W'];
+
 export function PriceChart({ figi }: PriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -43,29 +45,29 @@ export function PriceChart({ figi }: PriceChartProps) {
 
   const { data: candles, isLoading } = useCandles(figi, from, to);
 
+  const isIntraday = INTRADAY_PERIODS.includes(activePeriod);
+
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#9b9b9b',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        textColor: '#9ca3af',
+        fontFamily: "'Inter', system-ui, sans-serif",
       },
       grid: {
         vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
         horzLines: { color: 'rgba(255, 255, 255, 0.04)' },
       },
       crosshair: {
-        vertLine: { color: 'rgba(255, 255, 255, 0.2)', width: 1, style: 2 },
-        horzLine: { color: 'rgba(255, 255, 255, 0.2)', width: 1, style: 2 },
+        vertLine: { color: 'rgba(168, 85, 247, 0.3)', width: 1, style: 2 },
+        horzLine: { color: 'rgba(168, 85, 247, 0.3)', width: 1, style: 2 },
       },
-      rightPriceScale: {
-        borderVisible: false,
-      },
+      rightPriceScale: { borderVisible: false },
       timeScale: {
         borderVisible: false,
-        timeVisible: activePeriod === '1D',
+        timeVisible: isIntraday,
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true },
       handleScale: { mouseWheel: true, pinch: true },
@@ -75,22 +77,29 @@ export function PriceChart({ figi }: PriceChartProps) {
 
     if (chartMode === 'candle') {
       const candlestickSeries = chart.addCandlestickSeries({
-        upColor: '#26d9a0',
-        downColor: '#ff453a',
-        borderUpColor: '#26d9a0',
-        borderDownColor: '#ff453a',
-        wickUpColor: '#26d9a0',
-        wickDownColor: '#ff453a',
-        priceLineColor: '#26d9a0',
+        upColor: '#22c55e',
+        downColor: '#ef4444',
+        borderUpColor: '#22c55e',
+        borderDownColor: '#ef4444',
+        wickUpColor: '#22c55e',
+        wickDownColor: '#ef4444',
+        priceLineColor: '#22c55e',
         priceLineStyle: 2,
       });
 
       if (candles && candles.length > 0) {
-        const seriesData = candles.map((candle, index) => {
-          const date = new Date(from);
-          date.setDate(date.getDate() + index);
+        const seriesData = candles.map((candle) => {
+          if (isIntraday) {
+            return {
+              time: Math.floor(new Date(candle.time).getTime() / 1000) as UTCTimestamp,
+              open: candle.open,
+              high: candle.high,
+              low: candle.low,
+              close: candle.close,
+            };
+          }
           return {
-            time: date.toISOString().split('T')[0],
+            time: candle.time.split('T')[0] as `${number}-${number}-${number}`,
             open: candle.open,
             high: candle.high,
             low: candle.low,
@@ -102,23 +111,27 @@ export function PriceChart({ figi }: PriceChartProps) {
       }
     } else {
       const areaSeries = chart.addAreaSeries({
-        lineColor: '#26d9a0',
-        topColor: 'rgba(38, 217, 160, 0.28)',
-        bottomColor: 'rgba(38, 217, 160, 0.02)',
+        lineColor: '#a855f7',
+        topColor: 'rgba(168, 85, 247, 0.28)',
+        bottomColor: 'rgba(168, 85, 247, 0.02)',
         lineWidth: 2,
         crosshairMarkerVisible: true,
         crosshairMarkerRadius: 4,
-        crosshairMarkerBackgroundColor: '#26d9a0',
-        priceLineColor: '#26d9a0',
+        crosshairMarkerBackgroundColor: '#a855f7',
+        priceLineColor: '#a855f7',
         priceLineStyle: 2,
       });
 
       if (candles && candles.length > 0) {
-        const seriesData = candles.map((candle, index) => {
-          const date = new Date(from);
-          date.setDate(date.getDate() + index);
+        const seriesData = candles.map((candle) => {
+          if (isIntraday) {
+            return {
+              time: Math.floor(new Date(candle.time).getTime() / 1000) as UTCTimestamp,
+              value: candle.close,
+            };
+          }
           return {
-            time: date.toISOString().split('T')[0],
+            time: candle.time.split('T')[0] as `${number}-${number}-${number}`,
             value: candle.close,
           };
         });
@@ -139,16 +152,21 @@ export function PriceChart({ figi }: PriceChartProps) {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [candles, from, activePeriod, chartMode]);
+  }, [candles, isIntraday, chartMode]);
 
   return (
-    <div className={styles['price-chart']}>
-      <div className={styles['price-chart__controls']}>
-        <div className={styles['price-chart__periods']}>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex gap-1">
           {PERIODS.map(({ key, label }) => (
             <button
               key={key}
-              className={`${styles['price-chart__period-btn']} ${activePeriod === key ? styles['price-chart__period-btn--active'] : ''}`}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                activePeriod === key
+                  ? 'bg-primary text-white'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary',
+              )}
               onClick={() => setActivePeriod(key)}
               type="button"
             >
@@ -156,33 +174,50 @@ export function PriceChart({ figi }: PriceChartProps) {
             </button>
           ))}
         </div>
-        <div className={styles['price-chart__mode-toggle']}>
+        <div className="flex gap-1 bg-secondary rounded-lg p-1">
           <button
-            className={`${styles['price-chart__mode-btn']} ${chartMode === 'line' ? styles['price-chart__mode-btn--active'] : ''}`}
+            className={cn(
+              'p-1.5 rounded-md transition-colors',
+              chartMode === 'line' ? 'bg-card text-primary' : 'text-muted-foreground hover:text-foreground',
+            )}
             onClick={() => setChartMode('line')}
             type="button"
             title="Линейный"
           >
-            <ChartLine />
+            <TrendingUp className="w-3.5 h-3.5" />
           </button>
           <button
-            className={`${styles['price-chart__mode-btn']} ${chartMode === 'candle' ? styles['price-chart__mode-btn--active'] : ''}`}
+            className={cn(
+              'p-1.5 rounded-md transition-colors',
+              chartMode === 'candle' ? 'bg-card text-primary' : 'text-muted-foreground hover:text-foreground',
+            )}
             onClick={() => setChartMode('candle')}
             type="button"
             title="Свечи"
           >
-            <ChartColumn />
+            <BarChart2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
+
       {isLoading ? (
-        <div className={styles['price-chart__loading']}>
-          <Loader size="m" />
+        <div className="h-48 flex items-center justify-center">
+          <svg
+            className="animate-spin h-6 w-6 text-primary"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
         </div>
       ) : candles && candles.length > 0 ? (
-        <div ref={chartContainerRef} className={styles['price-chart__container']} />
+        <div ref={chartContainerRef} className="h-48 w-full" />
       ) : (
-        <div className={styles['price-chart__empty']}>Нет данных за выбранный период</div>
+        <div className="h-48 flex items-center justify-center text-sm text-muted-foreground">
+          Нет данных за выбранный период
+        </div>
       )}
     </div>
   );

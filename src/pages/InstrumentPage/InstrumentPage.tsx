@@ -1,28 +1,26 @@
 import { useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Button } from '@gravity-ui/uikit';
-import { ArrowLeft, Bell, Plus, FileArrowDown } from '@gravity-ui/icons';
+import { ArrowLeft, Bell, Plus, Download } from 'lucide-react';
 import { useTelegram } from '@/providers/TelegramProvider';
 import { useTrackedInstruments, useCreateTracked, useDeleteTracked } from '@/hooks/useTracked';
 import { PriceChart } from '@/components/PriceChart/PriceChart';
 import { AlertDialog } from '@/components/AlertDialog/AlertDialog';
 import { ReportDialog } from '@/components/ReportDialog/ReportDialog';
 import { TrackedCard } from '@/components/TrackedCard/TrackedCard';
+import { Button } from '@/components/ui/button';
 import { reportsApi } from '@/api/reports';
 import { formatPrice } from '@/utils/format';
-import type { InstrumentDto, TrackedInstrumentResponse, ReportPeriod } from '@/types/api';
-import styles from './InstrumentPage.module.scss';
+import type { InstrumentDto, TrackedInstrumentResponse, ReportPeriod, ReportFormat } from '@/types/api';
 
 export function InstrumentPage() {
   const { figi } = useParams<{ figi: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, chatId, hapticFeedback, showConfirm } = useTelegram();
+  const { hapticFeedback, showConfirm } = useTelegram();
 
   const instrument = (location.state as { instrument?: InstrumentDto })?.instrument;
-  const userId = user?.id ?? null;
 
-  const { data: allTracked } = useTrackedInstruments(userId);
+  const { data: allTracked } = useTrackedInstruments();
   const instrumentTracked = allTracked?.filter((t) => t.figi === figi) ?? [];
 
   const createMutation = useCreateTracked();
@@ -32,26 +30,22 @@ export function InstrumentPage() {
   const [editData, setEditData] = useState<TrackedInstrumentResponse | null>(null);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleCreateAlert = (buyPrice: number, sellPrice: number) => {
-    if (!figi || !userId || !chatId || !instrument) {
-      console.warn('Cannot create alert — missing data:', { figi, userId, chatId, instrument });
-      return;
-    }
+    if (!figi || !instrument) return;
 
+    setError(null);
     createMutation.mutate(
-      {
-        figi,
-        instrumentName: instrument.name,
-        buyPrice,
-        sellPrice,
-        userId,
-        chatId,
-      },
+      { figi, instrumentName: instrument.name, buyPrice, sellPrice },
       {
         onSuccess: () => {
           hapticFeedback('notification');
           setDialogOpen(false);
+        },
+        onError: (err: unknown) => {
+          const apiErr = err as { detail?: string; title?: string };
+          setError(apiErr.detail || apiErr.title || 'Не удалось создать алерт');
         },
       },
     );
@@ -71,94 +65,99 @@ export function InstrumentPage() {
     setDialogOpen(true);
   };
 
-  const handleDownloadReport = async (period: ReportPeriod) => {
+  const handleDownloadReport = async (period: ReportPeriod, format: ReportFormat) => {
     if (!figi || !instrument) return;
     setReportLoading(true);
+    setError(null);
     try {
-      const blob = await reportsApi.downloadStockReport(figi, instrument.name, period);
+      const blob = await reportsApi.downloadStockReport(figi, instrument.name, period, format);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `report_${figi}_${period}.pdf`;
+      a.download = `report_${figi}_${period}.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       hapticFeedback('notification');
       setReportDialogOpen(false);
-    } catch (error) {
-      console.error('Failed to download report:', error);
+    } catch (err) {
+      const apiErr = err as { detail?: string; title?: string };
+      setError(apiErr.detail || apiErr.title || 'Не удалось скачать отчёт');
     } finally {
       setReportLoading(false);
     }
   };
 
   return (
-    <div className={styles['instrument-page']}>
-      <div className={styles['instrument-page__back']}>
-        <Button view="flat" size="m" onClick={() => navigate(-1)}>
-          <Button.Icon>
-            <ArrowLeft />
-          </Button.Icon>
-          Назад
-        </Button>
-      </div>
+    <div className="px-4 py-4 space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="-ml-2">
+        <ArrowLeft className="w-4 h-4 mr-1" /> Назад
+      </Button>
 
-      <div className={styles['instrument-page__hero']}>
-        <div className={styles['instrument-page__name']}>
-          {instrument?.name ?? 'Инструмент'}
-        </div>
-        <div className={styles['instrument-page__figi']}>{figi}</div>
+      {/* Hero */}
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold text-foreground">{instrument?.name ?? 'Инструмент'}</h1>
+        <p className="text-xs text-muted-foreground">{figi}</p>
         {instrument?.price != null && (
-          <div className={styles['instrument-page__current-price']}>
-            {formatPrice(instrument.price)} ₽
-          </div>
+          <p className="text-2xl font-bold text-primary">{formatPrice(instrument.price)} ₽</p>
         )}
       </div>
 
-      <div className={styles['instrument-page__chart']}>
+      {/* Chart */}
+      <div className="bg-card border border-card-border rounded-2xl p-4">
         {figi && <PriceChart figi={figi} />}
       </div>
 
-      <div className={styles['instrument-page__actions']}>
+      {/* Error message */}
+      {error && (
+        <p className="text-sm text-negative bg-negative/10 rounded-lg px-3 py-2">{error}</p>
+      )}
+
+      {/* Actions */}
+      <div className="grid grid-cols-2 gap-3">
         <Button
-          view="action"
-          size="xl"
-          width="max"
+          size="lg"
+          className="w-full"
+          disabled={!instrument}
           onClick={() => {
             setEditData(null);
+            setError(null);
             setDialogOpen(true);
             hapticFeedback('impact');
           }}
         >
-          <Button.Icon>
-            <Plus />
-          </Button.Icon>
-          Создать алерт
+          <Plus className="w-4 h-4" /> Создать алерт
         </Button>
         <Button
-          view="outlined"
-          size="xl"
-          width="max"
+          variant="outline"
+          size="lg"
+          className="w-full"
+          disabled={!instrument}
           onClick={() => {
+            setError(null);
             setReportDialogOpen(true);
             hapticFeedback('impact');
           }}
         >
-          <Button.Icon>
-            <FileArrowDown />
-          </Button.Icon>
-          Экспорт PDF
+          <Download className="w-4 h-4" /> Отчёт
         </Button>
       </div>
 
+      {!instrument && (
+        <p className="text-xs text-muted-foreground text-center">
+          Данные инструмента недоступны. Перейдите через поиск.
+        </p>
+      )}
+
+      {/* Active alerts */}
       {instrumentTracked.length > 0 && (
-        <div className={styles['instrument-page__info-section']}>
-          <div className={styles['instrument-page__info-title']}>
-            <Bell style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Bell className="w-4 h-4 text-primary" />
             Активные алерты ({instrumentTracked.length})
           </div>
-          <div className={styles['instrument-page__alerts-list']}>
+          <div className="space-y-2">
             {instrumentTracked.map((tracked, i) => (
               <TrackedCard
                 key={tracked.id}
@@ -177,6 +176,7 @@ export function InstrumentPage() {
         onClose={() => {
           setDialogOpen(false);
           setEditData(null);
+          setError(null);
         }}
         onSubmit={handleCreateAlert}
         instrumentName={instrument?.name ?? ''}
@@ -184,14 +184,19 @@ export function InstrumentPage() {
         currentPrice={instrument?.price}
         editData={editData}
         isLoading={createMutation.isPending}
+        serverError={error}
       />
 
       <ReportDialog
         open={reportDialogOpen}
-        onClose={() => setReportDialogOpen(false)}
+        onClose={() => {
+          setReportDialogOpen(false);
+          setError(null);
+        }}
         onDownload={handleDownloadReport}
         instrumentName={instrument?.name ?? ''}
         isLoading={reportLoading}
+        error={error}
       />
     </div>
   );

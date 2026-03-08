@@ -1,14 +1,21 @@
 import { useState } from 'react';
-import { Modal, Button, Text } from '@gravity-ui/uikit';
-import type { ReportPeriod } from '@/types/api';
-import styles from './ReportDialog.module.scss';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import type { ReportPeriod, ReportFormat } from '@/types/api';
 
 interface ReportDialogProps {
   open: boolean;
   onClose: () => void;
-  onDownload: (period: ReportPeriod) => void;
+  onDownload: (period: ReportPeriod, format: ReportFormat) => void;
   instrumentName: string;
   isLoading?: boolean;
+  error?: string | null;
 }
 
 const PERIODS: { key: ReportPeriod; label: string }[] = [
@@ -18,56 +25,101 @@ const PERIODS: { key: ReportPeriod; label: string }[] = [
   { key: '1y', label: '1 год' },
 ];
 
+const FORMATS: { key: ReportFormat; label: string; description: string }[] = [
+  { key: 'pdf', label: 'PDF', description: 'С графиком свечей' },
+  { key: 'md', label: 'Markdown', description: 'Текст и таблицы' },
+];
+
 export function ReportDialog({
   open,
   onClose,
   onDownload,
   instrumentName,
   isLoading,
+  error,
 }: ReportDialogProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>('1m');
+  const [selectedFormat, setSelectedFormat] = useState<ReportFormat>('pdf');
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <div style={{ padding: '24px', minWidth: '320px' }}>
-        <div style={{ marginBottom: '8px' }}>
-          <Text variant="header-1">Экспорт отчёта</Text>
-        </div>
-        <div style={{ marginBottom: '20px' }}>
-          <Text variant="body-1" color="secondary">
-            {instrumentName}
-          </Text>
-        </div>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Экспорт отчёта</DialogTitle>
+          <p className="text-sm text-muted-foreground">{instrumentName}</p>
+        </DialogHeader>
 
-        <div className={styles['report-dialog__periods']}>
-          {PERIODS.map(({ key, label }) => (
-            <button
-              key={key}
-              className={`${styles['report-dialog__period-btn']} ${
-                selectedPeriod === key ? styles['report-dialog__period-btn--active'] : ''
-              }`}
-              onClick={() => setSelectedPeriod(key)}
-              type="button"
+        <div className="space-y-5">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Период
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {PERIODS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  className={cn(
+                    'py-2 px-3 rounded-xl text-sm font-medium border transition-colors',
+                    selectedPeriod === key
+                      ? 'bg-primary/15 border-primary/40 text-primary'
+                      : 'border-card-border text-muted-foreground hover:text-foreground hover:bg-secondary',
+                  )}
+                  onClick={() => setSelectedPeriod(key)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Формат
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {FORMATS.map(({ key, label, description }) => (
+                <button
+                  key={key}
+                  className={cn(
+                    'py-2 px-3 rounded-xl text-left border transition-colors',
+                    selectedFormat === key
+                      ? 'bg-primary/15 border-primary/40'
+                      : 'border-card-border hover:bg-secondary',
+                  )}
+                  onClick={() => setSelectedFormat(key)}
+                  type="button"
+                >
+                  <div
+                    className={cn(
+                      'text-sm font-medium',
+                      selectedFormat === key ? 'text-primary' : 'text-foreground',
+                    )}
+                  >
+                    {label}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-negative">{error}</p>}
+
+          <div className="flex gap-2 pt-1">
+            <Button variant="ghost" className="flex-1" onClick={onClose}>
+              Отмена
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={() => onDownload(selectedPeriod, selectedFormat)}
+              loading={isLoading}
             >
-              {label}
-            </button>
-          ))}
+              Скачать {selectedFormat.toUpperCase()}
+            </Button>
+          </div>
         </div>
-
-        <div className={styles['report-dialog__footer']}>
-          <Button view="flat" size="l" onClick={onClose}>
-            Отмена
-          </Button>
-          <Button
-            view="action"
-            size="l"
-            onClick={() => onDownload(selectedPeriod)}
-            loading={isLoading}
-          >
-            Скачать PDF
-          </Button>
-        </div>
-      </div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }
