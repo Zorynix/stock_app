@@ -69,12 +69,14 @@ bun run build
 
 | Файл | Сервис | Описание |
 |------|--------|----------|
-| `auth.ts` | AuthService (8081) | Регистрация, вход, OTP |
-| `profile.ts` | AuthService (8081) | Профиль, email, Telegram-связка |
-| `instruments.ts` | MarketDataService (8080) | Поиск акций, свечи |
-| `tracked.ts` | AlertService (8082) | CRUD ценовых алертов |
-| `notifications.ts` | AlertService (8082) | История уведомлений |
-| `reports.ts` | AlertService (8082) | Скачивание отчётов (PDF/MD) |
+| `auth.ts` | AuthService | Регистрация, вход, OTP |
+| `profile.ts` | AuthService | Профиль, email, Telegram-связка |
+| `instruments.ts` | MarketDataService | Поиск акций, свечи |
+| `tracked.ts` | AlertService | CRUD ценовых алертов |
+| `notifications.ts` | AlertService | История уведомлений |
+| `reports.ts` | AlertService | Скачивание отчётов (PDF/MD) |
+
+Все запросы проходят через единый API Gateway (`localhost:8080`), который маршрутизирует их к нужному сервису.
 
 Базовый клиент (`client.ts`) — Axios instance с автоматической подстановкой JWT-токена
 из localStorage и заголовка `X-Telegram-Init-Data` для Telegram-авторизации.
@@ -109,16 +111,24 @@ React Query обёртки над API-функциями. Содержат queri
 
 ## API Proxy (vite.config.ts)
 
-В dev-режиме Vite проксирует запросы по префиксу пути. Порядок важен (специфичные раньше catch-all):
+В dev-режиме Vite проксирует все `/api/**` запросы к API Gateway:
 
 ```
-/api/auth/**               → http://localhost:8081  (AuthService)
-/api/profile/**            → http://localhost:8081  (AuthService)
-/api/tracked-instruments/**→ http://localhost:8082  (AlertService)
-/api/notifications/**      → http://localhost:8082  (AlertService)
-/api/reports/**            → http://localhost:8082  (AlertService)
-/api/**                    → http://localhost:8080  (MarketDataService, catch-all)
+/api/**  → http://localhost:8080  (API Gateway)
 ```
+
+API Gateway маршрутизирует запросы к downstream-сервисам:
+
+| Маршрут | Сервис | JWT |
+|---------|--------|-----|
+| `/api/auth/**` | AuthService:8081 | Нет |
+| `/api/profile/**` | AuthService:8081 | Да |
+| `/api/tracked-instruments/**` | AlertService:8082 | Да |
+| `/api/notifications/**` | AlertService:8082 | Да |
+| `/api/reports/**` | AlertService:8082 | Да |
+| `/api/instruments/**` | MarketDataService:8083 | Нет |
+| `/api/accounts/**` | PortfolioService:8084 | Нет |
+| `/api/portfolio/**` | PortfolioService:8084 | Нет |
 
 ---
 
